@@ -6,6 +6,7 @@ import numpy as np
 import sys
 import cPickle as pickle 
 import Event
+import DataSet
 
 #USAGE:
 #python rootConverter.py <root file paths>
@@ -66,12 +67,12 @@ if __name__ == "__main__":
 			hitPoints.append([el.HitX, el.HitY, el.HitZ, el.Time])
 			hitEn.append(el.HitEn)
 
-		print len(eventList)
+		data = DataSet.DataSet(eventList)
 		
 		#save the file as a pickle file
 		#the name of the saved file is the root file name
 		#just with a ".p" instead of ".root"
-		pickle.dump(eventList, open(fn[:-5] + ".p", "wb"))
+		pickle.dump(data, open(fn[:-5] + ".p", "wb"))
 
 		#to load this file, do 
 		#eventList = pickle.load(open(filname.p, 'rb'))

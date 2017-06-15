@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import numpy as np
 import sys
+import DataSet
 
 class Event:
 	def __init__(self, hitPoints=None, hitEn=None, evNum=None):
