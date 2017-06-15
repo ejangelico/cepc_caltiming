@@ -1,0 +1,28 @@
+<gear>
+    <global detectorName="CEPC_v1" />
+    <!--Gear XML file automatically created with GearXML::createXMLFile ....-->
+    <detectors>
+        <detector name="MokkaParameters" geartype="GearParameters">
+            <parameter name="MokkaModel" type="string" value="CEPC_v1" />
+            <parameter name="MokkaVersion" type="string" value="void" />
+            <parameter name="SiCalBarrelHalfZ" type="string" value="2245" />
+            <parameter name="SiCalBuildBarrel" type="string" value="1" />
+            <parameter name="SiCalEndcapEta1" type="string" value="10000" />
+            <parameter name="SiCalEndcapEta2" type="string" value="10000" />
+            <parameter name="SiCalEndcapOuterR" type="string" value="2500" />
+            <parameter name="SiCalInnerRadius" type="string" value="1845" />
+            <parameter name="SiCalLayerStructure" type="string" value="(W:3.,Si:0.5,PCB:2)*200" />
+            <parameter name="SiCalXCellSize" type="string" value="10" />
+            <parameter name="SiCalYCellSize" type="string" value="10" />
+            <parameter name="SiCalZeroThickReset" type="string" value="0" />
+            <parameter name="calorimeter_region_rmax" type="string" value="" />
+            <parameter name="calorimeter_region_zmax" type="string" value="" />
+            <parameter name="tracker_region_rmax" type="string" value="" />
+            <parameter name="tracker_region_zmax" type="string" value="" />
+            <parameter name="world_box_hx" type="string" value="10000" />
+            <parameter name="world_box_hy" type="string" value="10000" />
+            <parameter name="world_box_hz" type="string" value="25000" />
+        </detector>
+    </detectors>
+    <materials />
+</gear>

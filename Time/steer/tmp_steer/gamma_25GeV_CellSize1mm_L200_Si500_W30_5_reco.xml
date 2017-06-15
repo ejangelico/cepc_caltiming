@@ -1,0 +1,28 @@
+
+ <marlin>
+   
+   <execute>
+     <processor name="MyAnaHit"/>
+     </execute>
+
+     <global>
+     <parameter name="LCIOInputFiles">
+/besfs/groups/higgs/users/zhaoh/cepc/myWorkSpace/SimplifiedGeometry/Generator/Time/L200/gamma/gamma_25GeV_CellSize1mm_L200_Si500_W30_5.slcio
+     </parameter>
+     <parameter name="GearXMLFile" value="/besfs/groups/higgs/users/zhaoh/cepc/myWorkSpace/SimplifiedGeometry/Generator/Time/L200/GearOutput.xml"/>
+     <parameter name="MaxRecordNumber" value="1001"/>
+     <parameter name="SkipNEvents" value="0"/>
+     <parameter name="SupressCheck" value="false"/>
+     <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
+     <parameter name="RandomSeed" value="1234567890" />
+     </global>
+
+     <processor name="MyAnaHit" type="AnaHit">
+     <parameter name="TreeOutputFile" type="StringVec">
+     AnaHit_gamma_25GeV_CellSize1mm_L200_Si500_W30_5.root
+     </parameter>
+     <parameter name="OverwriteFile" type="int"> 1 </parameter>
+     </processor>
+
+     </marlin>
+

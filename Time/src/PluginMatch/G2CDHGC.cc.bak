@@ -1,0 +1,287 @@
+#include <G2CDHGC.hh>
+#include <EVENT/LCCollection.h>
+#include <EVENT/MCParticle.h>
+#include <EVENT/SimCalorimeterHit.h>
+#include <EVENT/CalorimeterHit.h>
+#include <EVENT/LCFloatVec.h>
+#include <EVENT/LCParameters.h>
+#include <IMPL/CalorimeterHitImpl.h>
+#include <IMPL/LCCollectionVec.h>
+#include <IMPL/LCFlagImpl.h>
+#include <IMPL/LCRelationImpl.h>
+#include "UTIL/CellIDDecoder.h"
+
+#include <values.h>
+#include <string>
+#include <iostream>
+#include <cmath>
+#include <stdexcept>
+#include <sstream>
+
+#include <TFile.h>
+#include <TTree.h>
+#include <Rtypes.h>
+#include <TMath.h>
+#include <TF1.h>
+#include <TMath.h>
+#include <TRandom.h>
+#include <TVector3.h>
+
+using namespace std;
+using namespace lcio ;
+using namespace marlin ;
+
+const float MIP = 0.308E-3;
+
+const int   length=5;
+const int   width=5;
+const int center=0;
+
+const int deadarea=0;
+
+const int   Nonhomogeneity_T=0;
+const float Nonhomogeneity_cal = 1/0.9578;
+
+const float nonhomogeneity[length]={1};
+/*
+   {1.17,1.15,1.09,1.08,1.03,1.01,0.99,0.98,0.97,0.96,
+   0.96,0.94,0.94,0.94,0.93,0.93,0.93,0.93,0.93,0.93,
+   0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,
+   0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.93,0.94,
+   0.93,0.94,0.94,0.95,0.94};
+*/
+
+const float Saturation=1;
+const float Saturation_Cal_x[69]={46.296,92.7548,185.956,291.429,385.012,486.767,582.938,679.544,789.653,858.949,982.392,1078.25,1161.85,1265.32,1361.14,1476.58,1591.45,1715.11,1834.02,1964.91,2110.23,2258.68,2382.28,2653.79,2820.6,2969.08,3142.27,3323.61,3496.86,3674.24,3867.63,4060.35,4264.43,4439.98,4646.59,4863.38,5074.62,5271.6,5506.65,5721.46,5850.9,6052.21,6286.12,6532.66,6787.25,7006.56,7267.79,7519.74,7780.4,8027.81,8300.38,8583.16,8852.83,9121.6,9419.61,9705.68,10031.5,10288.5,10602.7,10918.9,11234.3,11462.3,11855.6,12187.2,12508.5,12818.5,13154.5,13494.3,13833.3};
+//const float Saturation_Cal_y[69]={-0.0276078,-0.022,-0.0251298,-0.0241696,-0.0270408,-0.0197722,-0.0173992,-0.0162985,-0.0108634,-0.000945931,-0.00133855,-0.00257479,-0.000545754,-0.00104036,-0.000392481,0.00103031,0.00136362,0.00423291,0.00448935,0.00285365,0.00325128,0.0044323,0.00422234,-0.00273108,-0.00272284,-0.000944785,-0.000692077,-0.000924096,0.00953398,0.00575475,0.00247017,0.00226614,-0.0017164,-0.00310598,-0.00110575,-0.00318928,-0.00567484,-0.00533133,-0.00834235,-0.00735175,0.00893057,0.00749022,0.00666561,0.0038509,-0.00156386,-0.00490704,-0.00860846,-0.00450593,-0.00265058,-0.000764758,-6.12975e-06,0.00182267,0.00264134,0.00366878,0.0030491,0.00280244,0.000846532,-0.000322069,0.000655123,0.000440197,0.000601805,0.000137229,0.000150465,-0.00143112,-0.000918228,-0.0012479,0.000261039,-0.000272589,1.08303e-05};
+const float Saturation_Cal_y[69]={-0.114468,-0.108853,-0.110699,-0.10867,-0.110281,-0.10247,-0.0992015,-0.0970892,-0.0907867,-0.0807574,-0.0796536,-0.0796622,-0.0767552,-0.0759651,-0.0741861,-0.0714221,-0.0696804,-0.0654014,-0.0636488,-0.063544,-0.0612938,-0.0582248,-0.0568066,-0.0600002,-0.0577787,-0.054034,-0.0514287,-0.0491651,-0.0415867,-0.0411429,-0.0397884,-0.0351639,-0.0342422,-0.0312405,-0.0236604,-0.0202045,-0.0172996,-0.0115236,-0.00844753,-0.0012194,0.0217841,0.0261825,0.0324226,0.0367325,0.0381076,0.0409659,0.0419281,0.0427659,0.0412851,0.0399487,0.0371922,0.0352537,0.0325044,0.0299182,0.0254238,0.0214013,0.0153185,0.0108479,0.00745695,0.0029716,-0.00121063,-0.00474166,-0.0101797,-0.016098,-0.0201826,-0.0248156,-0.0283932,-0.033666,-0.0383219};
+
+int CellMergeI=width;
+//int CellMergeJ=length+deadarea;
+int CellMergeJ=width;
+
+const float CellSize=1.;
+const float HalfZBarrel=2245;
+const float innerR=1845;
+const float thick=6.8;
+const int   layerNum=30;
+const int   sensorpos=3.8; //the position of sensor's center in a layer
+const int Pi0=0;
+
+
+struct DigiHit {
+	int digihitCellID0;
+	int digihitCellID1;
+	float digihitEnergyDepo;
+	float PosX;
+	float PosY;
+	float PosZ;
+	SimCalorimeterHit * LeadSimCaloHit;
+} ;
+std::map <int, std::pair<float, float> >WeightVector;
+
+
+G2CDHGC aG2CDHGC ;
+G2CDHGC::G2CDHGC()
+	: Processor("G2CDHGC"),
+	_output(0)
+{
+	_description = "ScW ECAL HGC Digitizer";
+
+	registerProcessorParameter("CalibCalo" ,
+			"Global Calibration Constant" ,
+			_CalibCalo,
+			float(1));
+}
+
+void G2CDHGC::init() {
+	printParameters();
+	flag.setBit(LCIO::CHBIT_LONG);                  //To set position & ID1
+	flag.setBit(LCIO::CHBIT_ID1);
+	flag.setBit(LCIO::RCHBIT_ENERGY_ERROR);
+}
+
+void G2CDHGC::processEvent( LCEvent * evtP )
+{
+	if (evtP)
+	{
+		try{
+			LCCollection *inputHGCcol = evtP->getCollection( "SiCalCollection" ) ;
+
+			int NHGCSimHit = inputHGCcol->getNumberOfElements();
+			LCCollectionVec *hgccol = new LCCollectionVec(LCIO::CALORIMETERHIT);
+			string idString = inputHGCcol->getParameters().getStringVal(LCIO::CellIDEncoding);
+			hgccol->parameters().setValue(LCIO::CellIDEncoding, idString);
+			hgccol->setFlag(flag.getFlag());
+
+			LCCollectionVec *relcol = new LCCollectionVec(LCIO::LCRELATION);
+			relcol->setFlag(flag.getFlag());
+
+			CellIDDecoder<SimCalorimeterHit> idDecoder(inputHGCcol);
+
+			//Int_t LayerNum = 0; 
+			float HitEn = 0; 
+
+			TVector3 HitPos;
+			std::map <long long, DigiHit> IDtoDigiHit;
+
+			for(int k1 = 0; k1 < NHGCSimHit; k1++)
+			{       
+				SimCalorimeterHit * SimEcalhit = dynamic_cast<SimCalorimeterHit*>( inputHGCcol->getElementAt( k1 ) ) ;
+
+				//----------Pi0-------------------
+				if(Pi0==1){
+					HitEn=0;
+					for(int k2=0; k2<SimEcalhit->getNMCContributions(); k2++){
+						MCParticle * MCP0 = SimEcalhit->getParticleCont(k2);
+						int PDG1=MCP0->getPDG();
+						if(MCP0->getNumberOfParents()>0){
+							MCParticle * MCP1 = MCP0->getParent(0);
+							int PDG2=MCP1->getPDG();
+							if(PDG1==22&&PDG2==111){
+								HitEn+=SimEcalhit->getEnergyCont(k2);
+							}
+						}
+					}
+					//if(HitEn==0) HitEn==0.001;
+				}
+				//----------Pi0-------------------
+
+				if(Pi0==0) HitEn = SimEcalhit->getEnergy();
+				HitPos = SimEcalhit->getPosition();
+				long long tmpID = 0;
+				long int newID0=0,newID1=0;
+				int M = idDecoder(SimEcalhit)["M"];
+				int S = idDecoder(SimEcalhit)["S-1"];
+				int I = idDecoder(SimEcalhit)["I"];
+				int J = idDecoder(SimEcalhit)["J"];
+				int K = idDecoder(SimEcalhit)["K-1"];
+
+				CellMergeI=width;
+				CellMergeJ=width;
+				//CellMergeJ=length+deadarea;
+				if(K%2==1){
+					int tmp=CellMergeI;
+					CellMergeI=CellMergeJ;
+					CellMergeJ=tmp;
+
+					//--------------dead area-----------------------------------------
+					if(deadarea>0){
+						if(I%(length+deadarea)==0) HitEn=0.;
+					}
+					//----------------------------------------------------------------
+					//-------------non homogeneity-----------------------------------
+					if(Nonhomogeneity_T){
+						HitEn = HitEn*nonhomogeneity[I%length]*Nonhomogeneity_cal;
+					}
+					//---------------------------------------------------------------
+				}
+				if(K%2==0){
+					//--------------dead area-----------------------------------------
+					if(deadarea>0){
+						if(J%(length+deadarea)==0) HitEn=0.;
+					}
+					//----------------------------------------------------------------
+					//-------------non homogeneity-----------------------------------
+					if(Nonhomogeneity_T){
+						HitEn = HitEn*nonhomogeneity[J%length]*Nonhomogeneity_cal;
+					}
+					//---------------------------------------------------------------
+				}
+
+
+				if( HitEn > 1.0E-9 )
+				{
+					I = (int)I/CellMergeI;
+					J = (int)J/CellMergeJ;
+					newID0= S+(M<<8)+(I<<16);
+					newID1= K+(J<<16);
+					tmpID = newID0+(newID1<<32);
+
+					float LayerR[layerNum]={0},LayerZ[layerNum]={0};
+					for(int i=0;i<layerNum;i++){
+						LayerR[i]=innerR+thick*i+sensorpos;
+						LayerZ[i]=HalfZBarrel+thick*i+sensorpos;
+					}
+
+					TVector3 newHitPos;
+					if(S==1){
+						newHitPos.SetX(LayerR[K]*cos((I+0.5)*CellMergeI*CellSize/LayerR[K]));
+						newHitPos.SetY(LayerR[K]*sin((I+0.5)*CellMergeI*CellSize/LayerR[K]));
+						newHitPos.SetZ((J+0.5)*CellMergeJ*CellSize - HalfZBarrel);
+					}
+					else{
+						newHitPos.SetX((I+0.5)*CellMergeI*CellSize);
+						newHitPos.SetY((J+0.5)*CellMergeJ*CellSize);
+						newHitPos.SetZ((S==0)?-LayerZ[K]:LayerZ[K]);
+					}
+					double phi = newHitPos.Phi();
+					newHitPos.SetPhi(phi+M*3.141593/4);
+
+					if( IDtoDigiHit.find(tmpID) == IDtoDigiHit.end() )
+					{
+						IDtoDigiHit[tmpID].digihitCellID0 = newID0;
+						IDtoDigiHit[tmpID].digihitCellID1 = newID1;
+						IDtoDigiHit[tmpID].digihitEnergyDepo = HitEn * _CalibCalo;      //Assumption...
+						if(center==0){
+							IDtoDigiHit[tmpID].PosX = newHitPos.X(); // - (2.5*(IndexI%4) - 3.75)*SignX;
+							IDtoDigiHit[tmpID].PosY = newHitPos.Y(); // - (2.5*(IndexJ%4) - 3.75)*SignY;
+							IDtoDigiHit[tmpID].PosZ = newHitPos.Z(); // + 0.1*(IndexK%3);
+						}
+						if(center==1){
+							IDtoDigiHit[tmpID].PosX = newHitPos.X()-1000; // - (2.5*(IndexI%4) - 3.75)*SignX;
+							IDtoDigiHit[tmpID].PosY = newHitPos.Y()-400; // - (2.5*(IndexJ%4) - 3.75)*SignY;
+							IDtoDigiHit[tmpID].PosZ = newHitPos.Z(); // + 0.1*(IndexK%3);
+						}
+					}
+					else
+					{
+						IDtoDigiHit[tmpID].digihitEnergyDepo += HitEn * _CalibCalo;
+					}
+
+
+				}
+			}
+
+			float DigiHitPos[3] = {0, 0, 0};
+
+			for(std::map <long long, DigiHit>::iterator ff = IDtoDigiHit.begin(); ff!=IDtoDigiHit.end(); ff++)
+			{
+				CalorimeterHitImpl * calhit = new CalorimeterHitImpl();
+
+				calhit->setCellID0( ff->second.digihitCellID0 );        
+				calhit->setCellID1( ff->second.digihitCellID1 );        
+
+				//-------------Saturation--------------------------------------
+				if(Saturation==1&&MIP>0&&_CalibCalo>=1){
+					if(ff->second.digihitEnergyDepo<0.5*MIP*_CalibCalo) ff->second.digihitEnergyDepo=0;
+					else if(ff->second.digihitEnergyDepo<Saturation_Cal_x[0]/10*MIP*_CalibCalo) ff->second.digihitEnergyDepo*=(1+Saturation_Cal_y[0]);
+					else{
+						for(int ss=1;ss<69;ss++){
+							if(ff->second.digihitEnergyDepo<Saturation_Cal_x[ss]/10*MIP*_CalibCalo && ff->second.digihitEnergyDepo>=Saturation_Cal_x[ss-1]/10*MIP*_CalibCalo) ff->second.digihitEnergyDepo*=(1+Saturation_Cal_y[ss]);
+						}
+					}
+					if(ff->second.digihitEnergyDepo>=Saturation_Cal_x[68]/10*MIP*_CalibCalo) ff->second.digihitEnergyDepo=Saturation_Cal_x[68]/10*MIP*_CalibCalo;
+				}
+				//-------------------------------------------------------------
+				calhit->setEnergy( ff->second.digihitEnergyDepo );          //Charge
+				DigiHitPos[0] = ff->second.PosX;
+				DigiHitPos[1] = ff->second.PosY;
+				DigiHitPos[2] = ff->second.PosZ;
+				calhit->setPosition(DigiHitPos);
+				hgccol->addElement(calhit);
+			}
+
+			evtP->addCollection(hgccol, "DigiSiHit");
+
+		}
+		catch (lcio::DataNotAvailableException zero) { }
+	}
+}
+
+void G2CDHGC::end()
+{
+	std::cout<<"General ECAL Digitizer FINISHED"<<std::endl;
+}
+
+

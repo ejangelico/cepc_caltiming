@@ -1,0 +1,51 @@
+
+ <marlin>
+   
+   <execute>
+     <processor name="MyG2CDHGC"/>
+     <processor name="MyMarlinArbor"/>
+     <processor name="MyBushConnect"/>
+     <processor name="MyAnaClu"/>
+     <processor name="MyLCIOOutputProcessor"/>
+     </execute>
+
+     <global>
+     <parameter name="LCIOInputFiles">
+/besfs/groups/higgs/users/zhaoh/cepc/myWorkSpace/SimplifiedGeometry/Generator/Time/L200/gamma/gamma_10GeV_CellSize1mm_L200_Si500_W30_1.slcio
+     </parameter>
+     <parameter name="GearXMLFile" value="/besfs/groups/higgs/users/zhaoh/cepc/myWorkSpace/SimplifiedGeometry/Generator/Time/L200/GearOutput.xml"/>
+     <parameter name="MaxRecordNumber" value="1001"/>
+     <parameter name="SkipNEvents" value="0"/>
+     <parameter name="SupressCheck" value="false"/>
+     <parameter name="Verbosity" options="DEBUG0-4,MESSAGE0-4,WARNING0-4,ERROR0-4,SILENT"> MESSAGE </parameter>
+     <parameter name="RandomSeed" value="1234567890" />
+     </global>
+
+     <processor name="MyLCIOOutputProcessor" type="LCIOOutputProcessor">
+     <parameter name="LCIOOutputFile" type="string" >
+         gamma_10GeV_CellSize1mm_Si_1_reco.slcio
+     </parameter>
+     <parameter name="LCIOWriteMode" type="string" value="WRITE_NEW"/>
+     </processor>
+
+     <processor name="MyG2CDHGC" type="G2CDHGC">
+     <parameter name="CalibCalo" type="float"> 100 </parameter>
+     </processor>
+
+     <processor name="MyMarlinArbor" type="MarlinArbor">
+     </processor>
+
+     <processor name="MyBushConnect" type="BushConnect">
+     <parameter name="FlagDiagnosis" type="int">0 </parameter>
+     <parameter name="MCPMIMIC" type="int">1 </parameter>
+     </processor>
+
+     <processor name="MyAnaClu" type="AnaClu">
+     <parameter name="TreeOutputFile" type="StringVec">
+     AnaClu_gamma_10GeV_CellSize1mm_Si_1.root
+     </parameter>
+     <parameter name="OverwriteFile" type="int"> 1 </parameter>
+     </processor>
+
+     </marlin>
+
