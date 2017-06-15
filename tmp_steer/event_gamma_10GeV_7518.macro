@@ -1,0 +1,11 @@
+
+/generator/generator particleGun
+/gun/position 0 0 0 mm
+/gun/direction 0. 1. 0.
+/gun/energy 10 GeV
+/gun/momentumSmearing 0.0 GeV
+/gun/particle e-
+/run/beamOn 1001
+
+exit
+
