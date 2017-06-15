@@ -1,10 +1,10 @@
 #!/bin/bash
 path="$PWD"
-datapath="${path}/data/test/"
+datapath="${path}/data/electrons/"
 cd $path
 
 
-energy=1 #GeV
+energy=10 #GeV
 randomSeed=$((RANDOM % 10000)) #random 4 digit int
 echo ${randomSeed}
 output_file="electron_${energy}GeV_${randomSeed}"
@@ -20,7 +20,7 @@ echo \
 /gun/energy ${energy} GeV
 /gun/momentumSmearing 0.0 GeV
 /gun/particle e-
-/run/beamOn 11
+/run/beamOn 1001
 
 exit
 " > $tmpDir/event_${output_file}.macro
@@ -82,4 +82,5 @@ Mokka -U $tmpDir/init_${output_file}.macro
 
 chmod +x  $tmpDir/${output_file}.sh 
 .  $tmpDir/${output_file}.sh 
+mv GearOutput.xml ${datapath}
 #hep_sub  $tmpDir/${output_file}.sh -g higgs -o ${output_file}.out -e ${output_file}.err

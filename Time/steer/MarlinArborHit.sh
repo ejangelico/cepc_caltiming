@@ -2,9 +2,9 @@ path="$PWD"
 cd $path
 
 
-inputFilePath="../../data/test/"
-inputFileName="electron_1GeV_6893"
-outputFilePath="../roots/test/"
+inputFilePath="../../data/electrons/"
+inputFileName="electron_1GeV_2501"
+outputFilePath="../roots/electrons/"
 outputFileName="AnaHit_${inputFileName}.root"
 
 echo \
