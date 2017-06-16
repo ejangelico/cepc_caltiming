@@ -12,8 +12,15 @@ if __name__ == "__main__":
 	#data.events[100].energyDisplay()
 	#data.events[100].timeDisplay()
 	#data.events[100].printEvent()
-	data.events[100].plotTimeHist(10)
-	#data.avTimeHist(100)
+	#data.events[101].plotTimeHist(1000)
+	#data.avTimeHist(1000, 0, 1)
+	
+	data.plotAllDvsT()
+	d, t = data.events[110].timeVsDepth()
+	plt.plot(d, t, 'ko')
+	plt.xlabel("Depth into cal. (cm)")
+	plt.ylabel("Time of hit (ns)")
+	plt.show()
 	"""
 	hits, bin_edges = data.events[100].timeHist(10)
 	times = []

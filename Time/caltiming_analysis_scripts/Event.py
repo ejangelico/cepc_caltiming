@@ -22,6 +22,7 @@ class Event:
 		print
 		print "Event Energy:", self.hitEn
 
+	# Produces 3D event display of the pixels, where the color is the energy deposition
 	def energyDisplay(self):
 		x = []
 		y = []
@@ -49,6 +50,7 @@ class Event:
 	        ax.set_zlim(-35, 35)
 		plt.show()	
 
+	# Produces 3D event display of the pixels, where the color is the time of the event
 	def timeDisplay(self):
 		x = []
 		y = []
@@ -76,21 +78,38 @@ class Event:
 	        ax.set_zlim(-35, 35)
                 plt.show()	
 
-	def timeHist(self, numBins):
+	# Histograms the times of each pixel, weighted by the energy deposited.
+	# The time is relative to the first hit
+	# Returns (energyPerBin, binCenters)
+	def timeHist(self, numBins, rangeMin = None, rangeMax = None):
 		t = []
 		for hit in self.hitPoints:
 			t.append(hit[3])
 		t = [x - min(t) for x in t]
-		#startIndex = t.index(0) #Remove 0 to see if initial peak goes away
-		#t.pop(startIndex)
-		#if startIndex == 0: E = self.hitEn[1:]
-		#else: E = self.hitEn[:startIndex-1] + self.hitEn[startIndex:]
-		return np.histogram(t, numBins, weights = self.hitEn)
 
-	def plotTimeHist(self, numBins):
-		hits, bin_edges = self.timeHist(numBins)
-		times = []
+		if rangeMin is None:
+			rangeMin = min(t)
+		if rangeMax is None:
+			rangeMax = max(t)
+		hist, bin_edges = np.histogram(t, numBins, (rangeMin, rangeMax), weights = self.hitEn)
+
+		binCenters = []
 		for i in range(0, len(bin_edges)-1):
-			times.append((bin_edges[i]+bin_edges[i+1])/2.0)
-		plt.bar(times, hits, width = times[1]-times[0], color = 'blue')
+			binCenters.append((bin_edges[i]+bin_edges[i+1])/2.0)
+
+		return  (hist, binCenters)
+
+	# Plots the time histogram of the event
+	def plotTimeHist(self, numBins):
+		hits, binCenters = self.timeHist(numBins)
+		plt.bar(binCenters, hits, width = binCenters[1]-binCenters[0], color = 'blue')
 		plt.show()
+
+	# Returns two arrays of the depth and time of each hit
+	def timeVsDepth(self):
+		d = []
+		t = []
+		for hit in self.hitPoints:
+			d.append(hit[1])
+			t.append(hit[3])
+		return (d, t)
