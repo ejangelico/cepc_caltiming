@@ -22,6 +22,10 @@ class Event:
 		print
 		print "Event Energy:", self.hitEn
 
+	# Returns an array of layers of all the points in the event
+	def makeLayers(self):
+		pass
+
 	# Produces 3D event display of the pixels, where the color is the energy deposition
 	def energyDisplay(self):
 		x = []
@@ -113,3 +117,20 @@ class Event:
 			d.append(hit[1])
 			t.append(hit[3])
 		return (d, t)
+
+	# Plot the time vs depth of every hit in this event
+	def plotTvsD(self):
+		d, t = data.events[110].timeVsDepth()
+		plt.plot(d, t, 'ko')
+		plt.xlabel("Depth into cal. (mm)")
+		plt.ylabel("Time of hit (ns)")
+		plt.show()
+		
+	# Does a linear fit to the first time of arrival vs depth in each layer
+	def algo_linearFirstTimeByLayer(self):
+		layers = self.makeLayers()
+		tList = []
+		dList = []
+		for layer in layers:
+			tList.append(layer.getFirstTime())
+			dList.append(layer.d0)

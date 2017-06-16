@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	data.plotAllDvsT()
 	d, t = data.events[110].timeVsDepth()
 	plt.plot(d, t, 'ko')
-	plt.xlabel("Depth into cal. (cm)")
+	plt.xlabel("Depth into cal. (mm)")
 	plt.ylabel("Time of hit (ns)")
 	plt.show()
 	"""
