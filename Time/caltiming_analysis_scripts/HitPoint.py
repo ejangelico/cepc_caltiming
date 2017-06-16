@@ -38,10 +38,10 @@ class HitPoint:
 
 	#scalar multiplication
 	def scale(self, b):
-		return Point(b*self.getX(), b*self.getY(), b*self.getZ(), self.t, self.E 1)
+		return Point(b*self.getX(), b*self.getY(), b*self.getZ(), self.t, self.E, 1)
 
 	def __str__(self):
-		return "(" + str(self.getX()) + ", " + str(self.getY()) + ", " + str(self.getZ()) + "), (t = " + str(self.getT()) + ", E = " + str(self.getE()) + ")"
+		return "(" + str(self.getX()) + ", " + str(self.getY()) + ", " + str(self.getZ()) + "), (t = " + str(self.getT()) + ", E = " + str(self.getE()) + ")\n"
 
 	def getMag(self):
 		return np.sqrt(self.getX()**2 + self.getY()**2 + self.getZ()**2)
@@ -85,33 +85,11 @@ class HitPoint:
 	def getT(self):
 		return self.t
 
-	def setXYZ(self, xx, yy, zz):
-		(self.x, self.y, self.z) = (xx, yy, zz)
-
-	def setRhoPhiZ(self, rr, pp, zz):
-		(self.rho, self.phi, self.z) = (rr, pp, zz)
-
-	def setX(self, xx):
-		self.x = xx
-
-	def setY(self, yy):
-		self.y = yy
-
-	def setZ(self, zz): 
-		self.z = zz
-
-	def setRho(self, rr):
-		self.rho = rr
-
-	def setPhi(self, pp):
-		self.phi = pp
-
 	def setE(self, e):
 		self.E = e
 
 	def setT(self, t):
 		self.t = t
-
 
 	#---SETS AND GETS END---#
 

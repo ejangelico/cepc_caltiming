@@ -7,6 +7,7 @@ import sys
 import cPickle as pickle 
 import Event
 import DataSet
+import HitPoint
 
 #USAGE:
 #python rootConverter.py <root file paths>
@@ -34,8 +35,7 @@ if __name__ == "__main__":
 		eventList = []	#list of event class objects that store info for each event
 
 		curEvent = None
-		hitPoints = [] #[[x, y, z(mm), t(ns)], [x, y, z, t], ...]
-		hitEn = []		#energy deposited in hit pixel
+		hitPoints = [] #See HitPoint class, contains point, time, and energy
 
 		#tree has all of the events smushed into
 		#one list, so I call "el" one of the list elements
@@ -52,9 +52,8 @@ if __name__ == "__main__":
 			#event number, so store all of the 
 			#active lists into an Event class object
 			if(curEvent != thisEvent):
-				eventList.append(Event.Event(hitPoints, hitEn, curEvent))
-				hitPoints = [] #[[x, y, z, t], [x, y, z, t], ...]
-				hitEn = []		#energy deposited in hit pixel
+				eventList.append(Event.Event(hitPoints, curEvent))
+				hitPoints = [] 
 
 				#print to let you know that you're now on the next event
 				curEvent = thisEvent
@@ -64,8 +63,7 @@ if __name__ == "__main__":
 
 			#in any case, append this list element to our 
 			#lists that are quantities of interest
-			hitPoints.append([el.HitX, el.HitY, el.HitZ, el.Time])
-			hitEn.append(el.HitEn)
+			hitPoints.append(HitPoint.HitPoint(el.HitX, el.HitY, el.HitZ, el.Time, el.HitEn, 1))
 
 		data = DataSet.DataSet(eventList)
 		

@@ -8,9 +8,8 @@ import sys
 import DataSet
 
 class Event:
-	def __init__(self, hitPoints=None, hitEn=None, evNum=None):
-		self.hitPoints = hitPoints  #array of hit points corresponding to pixel positions in the ECAL
-		self.hitEn = hitEn  #array of energies that lines up with the hit points	
+	def __init__(self, hitPoints=None, evNum=None):
+		self.hitPoints = hitPoints  #array of hit points corresponding to pixel positions in the ECAL	
 		self.evNum = evNum 	#integer id for the event
 
 	def printEvent(self):
@@ -33,10 +32,10 @@ class Event:
 		z = []
 		E = []
 		for hit in self.hitPoints:
-			x.append(hit[0])
-			y.append(hit[1])
-			z.append(hit[2])
-		E = self.hitEn
+			x.append(hit.getX())
+			y.append(hit.getY())
+			z.append(hit.getZ())
+			E.append(hit.getE()) 
 		
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(E), vmax=max(E))
@@ -61,10 +60,10 @@ class Event:
 		z = []
 		t = []
 		for hit in self.hitPoints:
-			x.append(hit[0])
-			y.append(hit[1])
-			z.append(hit[2])
-			t.append(hit[3])	
+			x.append(hit.getX())
+			y.append(hit.getY())
+			z.append(hit.getZ())
+			t.append(hit.getT())	
 	
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=max(t))
@@ -87,15 +86,17 @@ class Event:
 	# Returns (energyPerBin, binCenters)
 	def timeHist(self, numBins, rangeMin = None, rangeMax = None):
 		t = []
+		E = []
 		for hit in self.hitPoints:
-			t.append(hit[3])
+			t.append(hit.getT())
+			E.append(hit.getE())
 		t = [x - min(t) for x in t]
 
 		if rangeMin is None:
 			rangeMin = min(t)
 		if rangeMax is None:
 			rangeMax = max(t)
-		hist, bin_edges = np.histogram(t, numBins, (rangeMin, rangeMax), weights = self.hitEn)
+		hist, bin_edges = np.histogram(t, numBins, (rangeMin, rangeMax), weights = E)
 
 		binCenters = []
 		for i in range(0, len(bin_edges)-1):
@@ -114,15 +115,15 @@ class Event:
 		d = []
 		t = []
 		for hit in self.hitPoints:
-			d.append(hit[1])
-			t.append(hit[3])
+			d.append(hit.getRho())
+			t.append(hit.getT())
 		return (d, t)
 
 	# Plot the time vs depth of every hit in this event
 	def plotTvsD(self):
 		d, t = data.events[110].timeVsDepth()
 		plt.plot(d, t, 'ko')
-		plt.xlabel("Depth into cal. (mm)")
+		plt.xlabel("Depth (rho) into cal. (mm)")
 		plt.ylabel("Time of hit (ns)")
 		plt.show()
 		
