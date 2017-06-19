@@ -4,6 +4,7 @@ import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
+import Helper
 
 # Given x-values and y-values of a curve with one peak, computes the full width at half max, in units of x
 def FWHM(xVals, yVals):
@@ -101,6 +102,21 @@ class DataSet:
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
 
+	#histograms the longitudinal shower depth
+	#as defined in the CALICE paper as "Z0"
+	#in units of the pion interaction length in tungsten
+	def histLongitudinalDepth(self):
+		Z0 = []
+		for ev in self.events:
+			Z0.append(ev.getShowerDepth())
+
+		fig, ax = plt.subplots()
+		ax.hist(Z0)
+		ax.set_xlabel("Longitudinal shower depth (lambda_i)")
+		plt.show()
+
+
+
 	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
@@ -174,3 +190,4 @@ class DataSet:
 		plt.xlabel("Pixel Smear Time (ps)")
 		plt.legend(["FWHM", "Std. Dev."])
 		plt.show()
+
