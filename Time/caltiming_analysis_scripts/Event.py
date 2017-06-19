@@ -226,9 +226,6 @@ class Event:
 
 		return Z0
 
-		
-
-		
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm
 	# timeCutoffLo = first hit time accepted by algo, ns

@@ -160,7 +160,7 @@ class DataSet:
 
 		return [tAv, tMed, tFWHM, tStd, tSkewness, tSkewTest]
 
-	def timeRecoSmearing(self, smearTimeList = None):
+	def timeRecoSmearing(self, smearTimeList = None, plotting = False):
 		if smearTimeList is None:
 			smearTimeList = [0.0, 0.001, 0.01, 0.1]
 		AvList = []
@@ -176,18 +176,21 @@ class DataSet:
 			FWHMList.append(1000*recoStats[2])
 			StdList.append(1000*recoStats[3])
 
-		smearTimeList = [1000*x for x in smearTimeList]
-		plt.plot(smearTimeList, AvList, 'k')
-		plt.plot(smearTimeList, MedList, 'r')
-		plt.ylabel("Difference from Truth (ps)")
-		plt.xlabel("Smear Time (ps)")
-		plt.legend(["Mean", "Median"])
-		plt.show()
+		if plotting:
+			smearTimeList = [1000*x for x in smearTimeList]
+			plt.plot(smearTimeList, AvList, 'k')
+			plt.plot(smearTimeList, MedList, 'r')
+			plt.ylabel("Difference from Truth (ps)")
+			plt.xlabel("Smear Time (ps)")
+			plt.legend(["Mean", "Median"])
+			plt.show()
 
-		plt.plot(smearTimeList, FWHMList, 'k')
-		plt.plot(smearTimeList, StdList, 'r')
-		plt.ylabel("Uncertainty on Reconstructed Time (ps)")
-		plt.xlabel("Pixel Smear Time (ps)")
-		plt.legend(["FWHM", "Std. Dev."])
-		plt.show()
-
+			plt.plot(smearTimeList, FWHMList, 'k')
+			plt.plot(smearTimeList, StdList, 'r')
+			plt.ylabel("Uncertainty on Reconstructed Time (ps)")
+			plt.xlabel("Pixel Smear Time (ps)")
+			plt.legend(["FWHM", "Std. Dev."])
+			plt.show()
+		
+		StdList = [x/1000 for x in StdList]
+		return StdList
