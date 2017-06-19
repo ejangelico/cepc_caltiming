@@ -9,12 +9,19 @@ import DataSet
 import Event
 
 if __name__ == "__main__":
+	print "Loading file...", 
+	sys.stdout.flush()
 	data = pickle.load(open("../pickles/electrons/AnaHit_electron_10GeV_3760.p", 'rb'))
+	print "Done."
+	sys.stdout.flush()
+
+	
+	data.timeReco(plotting = True)
 	#data.events[7].energyDisplay(True)
 	#data.events[100].timeDisplay()
 	#data.events[100].printEvent()
 	#data.events[10].plotTimeHist(40)
-	data.events[10].algo_linearFirstTimeByLayer()
+	#data.events[10].algo_linearFirstTimeByLayer()
 	#ti = time.time()
 	#data.smearAndSave(.001, 0.01, "../pickles/electrons/10GeV_smeared_1ps_1perc.p")
 	#tf = time.time()
