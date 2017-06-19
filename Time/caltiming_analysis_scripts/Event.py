@@ -198,6 +198,36 @@ class Event:
 		plt.xlabel("Depth into cal. (mm)")
 		plt.ylabel("Time of hit (ns)")
 		plt.show()
+
+
+	#function that calculates the shower depth
+	#of an event based on the definition of 
+	#"Z0" from the CALICE paper 2014
+	def getShowerDepth(self):
+		rho_start = 1847.3 #the front face of the e-cal in rho (mm)
+		timeCutoffLo = 6 # ns
+		timeCutoffHi = 8 # ns 
+		dCutoffLo = 1847.3 # mm
+		dCutoffHi = 3385 # mm
+
+		Z0 = 0
+		esum = 0
+		for hit in self.hitPoints:
+			if(timeCutoffLo < hit.getT() < timeCutoffHi) and (dCutoffLo < hit.getRho() < dCutoffHi):
+				e = hit.getE()
+				esum += e
+				rho = hit.getRho()
+				Z0 += e*(rho - rho_start)
+
+		Z0 = Z0/esum
+		#divide by interaction length for pions in 
+		#tungsten ~11.33cm
+		Z0 = Z0/113.3
+
+		return Z0
+
+		
+
 		
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm
@@ -209,7 +239,7 @@ class Event:
 		layerWidth = 1.0 # mm
 		timeCutoffLo = 5.5 # ns
 		timeCutoffHi = 6.6 # ns 
-		dCutoffLo = 1800 # mm
+		dCutoffLo = 1847.3 # mm
 		dCutoffHi = 2050 # mm
 
 		layers = self.makeLayers(layerWidth)
