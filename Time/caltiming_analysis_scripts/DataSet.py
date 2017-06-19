@@ -6,8 +6,6 @@ import numpy as np
 import scipy.stats
 import Helper
 
-
-
 class DataSet:
 	def __init__(self, events = None, tSmear = None, eSmear = None):
 		self.events = events
@@ -139,7 +137,7 @@ class DataSet:
 
 		return [tAv, tMed, tFWHM, tStd, tSkewness, tSkewTest]
 
-	def timeRecoSmearing(self, smearTimeList = None):
+	def timeRecoSmearing(self, smearTimeList = None, plotting = False):
 		if smearTimeList is None:
 			smearTimeList = [0.0, 0.001, 0.01, 0.1]
 		AvList = []
@@ -155,24 +153,28 @@ class DataSet:
 			FWHMList.append(1000*recoStats[2])
 			StdList.append(1000*recoStats[3])
 
-		fig, ax = plt.subplots(figsize=(25, 13))
-		Helper.resize(fig, ax)
-		smearTimeList = [1000*x for x in smearTimeList]
-		ax.plot(smearTimeList, AvList, 'b', linewidth=3)
-		ax.plot(smearTimeList, MedList, 'r', linewidth=3)
-		ax.set_ylabel("Difference from Truth (ps)")
-		ax.set_xlabel("Pixel Smear Time (ps)")
-		ax.grid(True)
-		ax.legend(["Mean", "Median"], fontsize=30)
-		plt.savefig("../../../midterm_report/720plots/manypoints_means.png", bbox_inches='tight')
+		if plotting:
+			fig, ax = plt.subplots(figsize=(25, 13))
+			Helper.resize(fig, ax)
+			smearTimeList = [1000*x for x in smearTimeList]
+			ax.plot(smearTimeList, AvList, 'b', linewidth=3)
+			ax.plot(smearTimeList, MedList, 'r', linewidth=3)
+			ax.set_ylabel("Difference from Truth (ps)")
+			ax.set_xlabel("Pixel Smear Time (ps)")
+			ax.grid(True)
+			ax.legend(["Mean", "Median"], fontsize=30)
+			plt.savefig("../../../midterm_report/720plots/manypoints_means.png", bbox_inches='tight')
+			p
 
-		fig, ax = plt.subplots(figsize=(25, 13))
-		Helper.resize(fig, ax)
-		ax.plot(smearTimeList, FWHMList, 'b', linewidth=3)
-		ax.plot(smearTimeList, StdList, 'r', linewidth=3)
-		ax.set_ylabel("Uncertainty on Reconstructed Time (ps)")
-		ax.set_xlabel("Pixel Smear Time (ps)")
-		ax.legend(["FWHM", "Std. Dev."], fontsize=30)
-		ax.grid(True)
-		plt.savefig("../../../midterm_report/720plots/manypoints_stds.png", bbox_inches='tight')
+			fig, ax = plt.subplots(figsize=(25, 13))
+			Helper.resize(fig, ax)
+			ax.plot(smearTimeList, FWHMList, 'b', linewidth=3)
+			ax.plot(smearTimeList, StdList, 'r', linewidth=3)
+			ax.set_ylabel("Uncertainty on Reconstructed Time (ps)")
+			ax.set_xlabel("Pixel Smear Time (ps)")
+			ax.legend(["FWHM", "Std. Dev."], fontsize=30)
+			ax.grid(True)
+			plt.savefig("../../../midterm_report/720plots/manypoints_stds.png", bbox_inches='tight')
 
+		StdList = [x/1000 for x in StdList]
+		return StdList

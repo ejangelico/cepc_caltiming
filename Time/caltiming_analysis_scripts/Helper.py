@@ -8,7 +8,7 @@ def resize(fig, ax):
 	ax.xaxis.label.set_size(21)
 	ax.get_xaxis().set_tick_params(labelsize=26, length=20, width=2, which='major')
 	ax.get_xaxis().set_tick_params(length=10, width=2, which='minor')
-	ax.get_yaxis().set_tick_params(labelsize=26, length=20, width=2, which='major')
+	ax.get_yaxis().set_tick_params(labelsize=20, length=20, width=2, which='major')
 	ax.get_yaxis().set_tick_params(length=10, width=2, which='minor')
 	return (fig, ax)
 
