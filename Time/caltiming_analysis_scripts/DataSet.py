@@ -3,9 +3,8 @@ import Event
 import matplotlib.pyplot as plt
 
 class DataSet:
-	def __init__(self, events = None, tSmear=0, eSmear=0):
+	def __init__(self, events = None):
 		self.events = events
-
 	
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
@@ -32,5 +31,3 @@ class DataSet:
 		plt.xlabel("Depth into Cal. (mm)")
 		plt.ylabel("Time of Hit (ns)")
 		plt.show()
-
-
