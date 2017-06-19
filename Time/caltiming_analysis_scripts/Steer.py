@@ -12,8 +12,13 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/electrons/AnaHit_electron_10GeV_3760.p", 'rb'))
+	data = pickle.load(open("../pickles/pions/noB/5Gev_1000evts.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
-	data.timeRecoSmearing(np.linspace(0, 0.1, 15))
+	#data.events[10].timeVsDepth(True)
+	data.events[10].energyDisplay(False)
+	#data.events[12].algo_linearFirstTimeByLayer(plotting=True)
+	#smdata = data.smear(0.01, 0)
+	#data.timeReco(0, False)
+	#data.timeRecoSmearing(np.linspace(0, 0.5, 30))
