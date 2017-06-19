@@ -7,7 +7,6 @@ import sys
 import cPickle as pickle 
 import Event
 import DataSet
-import HitPoint
 
 #USAGE:
 #python rootConverter.py <root file paths>
@@ -35,7 +34,7 @@ if __name__ == "__main__":
 		eventList = []	#list of event class objects that store info for each event
 
 		curEvent = None
-		hitPoints = [] #See HitPoint class, contains point, time, and energy
+		hitPoints = [] #list of HitPoints. See HitPoint class
 
 		#tree has all of the events smushed into
 		#one list, so I call "el" one of the list elements
@@ -65,12 +64,14 @@ if __name__ == "__main__":
 			#lists that are quantities of interest
 			hitPoints.append(HitPoint.HitPoint(el.HitX, el.HitY, el.HitZ, el.Time, el.HitEn, 1))
 
+		
 		data = DataSet.DataSet(eventList)
 		
 		#save the file as a pickle file
 		#the name of the saved file is the root file name
 		#just with a ".p" instead of ".root"
-		pickle.dump(data, open(fn[:-5] + ".p", "wb"))
+		filename = fn[:-5]+".p"
+		pickle.dump(data, open(filename, "wb"))
 
 		#to load this file, do 
 		#eventList = pickle.load(open(filname.p, 'rb'))
