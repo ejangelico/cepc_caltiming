@@ -3,14 +3,18 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from scipy.stats import linregress
 import numpy as np
+import time
 import sys
 import DataSet
 import HitPoint
+import Layer
 
 class Event:
-	def __init__(self, hitPoints=None, evNum=None):
-		self.hitPoints = hitPoints  #array of hit points corresponding to pixel positions in the ECAL	
+	def __init__(self, hitPoints=None, hitEn=None, evNum=None):
+		self.hitPoints = hitPoints  #array of hit points corresponding to pixel positions in the ECAL
+		self.hitEn = hitEn  #array of energies that lines up with the hit points	
 		self.evNum = evNum 	#integer id for the event
 
 	def printEvent(self):
@@ -23,8 +27,18 @@ class Event:
 		print "Event Energy:", self.hitEn
 
 	# Returns an array of layers of all the points in the event
-	def makeLayers(self):
-		pass
+	def makeLayers(self, width):
+		layerList = []
+		for hitPoint in self.hitPoints:
+			hitAdded = False
+			for layer in layerList:
+				if layer.addPoint(hitPoint):
+					hitAdded = True
+					break
+			if not hitAdded:
+				layerList.append(Layer.Layer())
+				layerList[-1].initializeWithPoint(hitPoint, width)
+		return layerList
 
 	def getSmearedEvent(self, tsm, esm):
 		smearedHitPoints = []
@@ -86,10 +100,10 @@ class Event:
 		z = []
 		E = []
 		for hit in self.hitPoints:
-			x.append(hit.getX())
-			y.append(hit.getY())
-			z.append(hit.getZ())
-			E.append(hit.getE()) 
+			x.append(hit[0])
+			y.append(hit[1])
+			z.append(hit[2])
+		E = self.hitEn
 		
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(E), vmax=max(E))
@@ -114,10 +128,10 @@ class Event:
 		z = []
 		t = []
 		for hit in self.hitPoints:
-			x.append(hit.getX())
-			y.append(hit.getY())
-			z.append(hit.getZ())
-			t.append(hit.getT())	
+			x.append(hit[0])
+			y.append(hit[1])
+			z.append(hit[2])
+			t.append(hit[3])	
 	
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=max(t))
@@ -140,17 +154,15 @@ class Event:
 	# Returns (energyPerBin, binCenters)
 	def timeHist(self, numBins, rangeMin = None, rangeMax = None):
 		t = []
-		E = []
 		for hit in self.hitPoints:
-			t.append(hit.getT())
-			E.append(hit.getE())
+			t.append(hit[3])
 		t = [x - min(t) for x in t]
 
 		if rangeMin is None:
 			rangeMin = min(t)
 		if rangeMax is None:
 			rangeMax = max(t)
-		hist, bin_edges = np.histogram(t, numBins, (rangeMin, rangeMax), weights = E)
+		hist, bin_edges = np.histogram(t, numBins, (rangeMin, rangeMax), weights = self.hitEn)
 
 		binCenters = []
 		for i in range(0, len(bin_edges)-1):
@@ -169,24 +181,48 @@ class Event:
 		d = []
 		t = []
 		for hit in self.hitPoints:
-			d.append(hit.getRho())
-			t.append(hit.getT())
+			d.append(hit[1])
+			t.append(hit[3])
 		return (d, t)
 
 	# Plot the time vs depth of every hit in this event
 	def plotTvsD(self):
 		d, t = data.events[110].timeVsDepth()
 		plt.plot(d, t, 'ko')
-		plt.xlabel("Depth (rho) into cal. (mm)")
+		plt.xlabel("Depth into cal. (mm)")
 		plt.ylabel("Time of hit (ns)")
 		plt.show()
 		
 	# Does a linear fit to the first time of arrival vs depth in each layer
-	def algo_linearFirstTimeByLayer(self):
-		layers = self.makeLayers()
+	def algo_linearFirstTimeByLayer(self, plotting = False):
+		ti = time.time()
+		layers = self.makeLayers(1.0)
+		tf = time.time()
+		print "Time for Event.makeLayers():", tf-ti
+		sys.exit()
 		tList = []
 		dList = []
 		for layer in layers:
 			tList.append(layer.getFirstTime())
 			dList.append(layer.d0)
+		fitParams = linregress(dList, tList)
+		linFitFunc = np.poly1d(fitParams[:2])	
+		
+		tEst = linFitFunc(min(dList))
 
+
+		print "Slope:", fitParams[0], "ns/mm"
+		print "1/Slope:", 1/fitParams[0], "mm/ns"
+		print "y-int:", fitParams[1], "mm"
+		print "Estimate of shower start time:", tEst, "ns"
+		print "Truth value:", min(tList), "ns"
+		print "Difference:", np.abs(tEst - min(tList)), "ns"
+
+		x = np.linspace(min(dList), max(dList), 10)
+		y = [linFitFunc(z) for z in x]	
+
+		plt.plot(x, y, 'r')
+		plt.plot(dList, tList, 'ko')
+		plt.xlabel("Depth (mm)")
+		plt.ylabel("Time (ns)")
+		plt.show()

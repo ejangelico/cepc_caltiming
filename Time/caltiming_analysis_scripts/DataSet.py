@@ -4,15 +4,15 @@ import cPickle as pickle
 import matplotlib.pyplot as plt
 
 class DataSet:
-	def __init__(self, events = None, tSmear=0, eSmear=0):
+	def __init__(self, events = None):
 		self.events = events
 		self.tSmear = tSmear 	#smear 1sigma in ns
 		#fractional energy resolution
 		#takes values between [0.0, 1.0]
 		self.eSmear = eSmear
 
+		self.layerBins = None
 
-	
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
 		timeHist = [0 for _ in range(numBins)]
@@ -62,6 +62,6 @@ class DataSet:
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
 
-
-
-
+	# Fills the layerBins array with the bin edges for the physical layers
+	def getLayers():	
+		pass
