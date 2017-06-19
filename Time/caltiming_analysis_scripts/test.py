@@ -9,6 +9,7 @@ import DataSet
 import Event
 
 if __name__ == "__main__":
+
 	print "Loading file...", 
 	sys.stdout.flush()
 	data = pickle.load(open("../pickles/electrons/AnaHit_electron_10GeV_3760.p", 'rb'))
@@ -22,6 +23,7 @@ if __name__ == "__main__":
 	#data.events[100].printEvent()
 	#data.events[10].plotTimeHist(40)
 	#data.events[10].algo_linearFirstTimeByLayer()
+
 	#ti = time.time()
 	#data.smearAndSave(.001, 0.01, "../pickles/electrons/10GeV_smeared_1ps_1perc.p")
 	#tf = time.time()
@@ -29,13 +31,22 @@ if __name__ == "__main__":
 	#smearedData = pickle.load(open("../pickles/electrons/10GeV_smeared_1ps_1perc.p", 'rb'))
 	#smearedData.events[10].plotTimeHist(40)
 	#data.avTimeHist(1000, 0, 1)
-	
-	#data.plotAllDvsT()
-	#d, t = data.events[7].timeVsDepth()
+	#d, t = data.events[9].timeVsDepth()
 	#plt.plot(d, t, 'ko')
-	#plt.xlabel("Depth into cal. (mm)")
-	#plt.ylabel("Time of hit (ns)")
 	#plt.show()
+
+	#data.plotAllDvsT()
+	"""
+	for i in range(len(data.events)):
+		d, t = data.events[i].timeVsDepth()
+		plt.plot(d, t, 'ko')
+		#plt.xlabel("Depth into cal. (mm)")
+		#plt.ylabel("Time of hit (ns)")
+		plt.show()
+		if(raw_input(">") == 'q'):
+			break
+	sys.exit()
+	"""
 	"""
 	hits, bin_edges = data.events[100].timeHist(10)
 	times = []
