@@ -9,6 +9,7 @@ import time
 import sys
 import DataSet
 import HitPoint
+import Helper
 import Layer
 
 class Event:
@@ -120,6 +121,9 @@ class Event:
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
+		#ax.set_xlim([-70, 70])
+		#ax.set_zlim([-70, 70])
+		#ax.set_ylim([1848, 3350])
 		if(drawDetector == True):
 			self.drawDetector(ax)
 
@@ -140,6 +144,7 @@ class Event:
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=max(t))
 		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+
 		fig = plt.figure()
 		ax = Axes3D(fig)
 		ax.scatter(x, y, z, c=scalarMap.to_rgba(t))
@@ -148,8 +153,9 @@ class Event:
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		if(drawDetector == True):
-			self.drawDetector(ax)
+		ax.set_xlim([-30, 30])
+		ax.set_zlim([-30, 30])
+		ax.set_ylim([1848, 2050])
         
 		plt.show()	
 
@@ -178,26 +184,27 @@ class Event:
 
 	# Plots the time histogram of the event
 	def plotTimeHist(self, numBins):
+		fig, ax = plt.subplots()
 		hits, binCenters = self.timeHist(numBins)
-		plt.bar(binCenters, hits, width = binCenters[1]-binCenters[0], color = 'blue')
+		ax.bar(binCenters, hits, width = binCenters[1]-binCenters[0], color = 'blue')
 		plt.show()
 
 	# Returns two arrays of the depth and time of each hit
-	def timeVsDepth(self):
+	def timeVsDepth(self, plotting = False):
 		d = []
 		t = []
 		for hit in self.hitPoints:
-			d.append(hit.getY())
+			d.append(hit.getRho())
 			t.append(hit.getT())
-		return (d, t)
 
-	# Plot the time vs depth of every hit in this event
-	def plotTvsD(self):
-		d, t = data.events[110].timeVsDepth()
-		plt.plot(d, t, 'ko')
-		plt.xlabel("Depth into cal. (mm)")
-		plt.ylabel("Time of hit (ns)")
-		plt.show()
+		if(plotting == True):
+			fig, ax = plt.subplots()
+			ax.plot(d, t, 'ko')
+			ax.set_xlabel("Depth into cal. (mm)")
+			ax.set_ylabel("Time of hit (ns)")
+			plt.show()
+
+		return (d, t)
 
 
 	#function that calculates the shower depth
@@ -264,21 +271,26 @@ class Event:
 		tEst = fitParams[0]*min(dList)+fitParams[1]
 
 		if plotting:
-			print "Slope:", fitParams[0], "ns/mm"
-			print "1/Slope:", 1/fitParams[0], "mm/ns"
-			print "y-int:", fitParams[1], "mm"
-			print "Estimate of shower start time:", tEst, "ns"
-			print "Truth value:", min(tList), "ns"
-			print "Difference:", np.abs(tEst - min(tList)), "ns"
+			#string to hold the fit info
+			fitinfo = 'Slope:' + str(fitParams[0]) + 'ns/mm\n'
+			fitinfo += "1/Slope:" + str(1/fitParams[0]) + "mm/ns\n"
+			fitinfo += "y-int:" + str(fitParams[1]) + "mm\n"
+			fitinfo += "Estimate of shower start time:" + str(tEst) + "ns\n"
+			fitinfo += "Truth value:" + str(min(tList)) + "ns\n"
+			fitinfo += "Difference:" + str(np.abs(tEst - min(tList))) +  "ns\n"
+			print fitinfo
+
 
 			linFitFunc = np.poly1d(fitParams[:2])	
 			x = np.linspace(min(dList), max(dList), 10)
 			y = [linFitFunc(z) for z in x]	
 
-			plt.plot(x, y, 'r')
-			plt.plot(dList, tList, 'ko')
-			plt.xlabel("Depth (mm)")
-			plt.ylabel("Time (ns)")
+			fig, ax = plt.subplots()
+			Helper.resize(fig, ax)
+			ax.plot(x, y, 'r', linewidth=2)
+			ax.plot(dList, tList, 'ko', markersize=15)
+			ax.set_xlabel("Depth (mm)")
+			ax.set_ylabel("Time (ns)")
 			plt.show()
 
 		return tEst, min(tList)
