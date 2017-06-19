@@ -67,12 +67,14 @@ if __name__ == "__main__":
 			hitPoints.append([el.HitX, el.HitY, el.HitZ, el.Time])
 			hitEn.append(el.HitEn)
 
+		
 		data = DataSet.DataSet(eventList)
 		
 		#save the file as a pickle file
 		#the name of the saved file is the root file name
 		#just with a ".p" instead of ".root"
-		pickle.dump(data, open(fn[:-5] + ".p", "wb"))
+		filename = fn[:-5]+".p"
+		pickle.dump(data, open(filename, "wb"))
 
 		#to load this file, do 
 		#eventList = pickle.load(open(filname.p, 'rb'))

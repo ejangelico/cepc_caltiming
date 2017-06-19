@@ -6,6 +6,7 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import numpy as np
 import sys
 import DataSet
+import HitPoint
 
 class Event:
 	def __init__(self, hitPoints=None, hitEn=None, evNum=None):
@@ -36,8 +37,61 @@ class Event:
 				layerList[-1].initializeWithPoint(hitPoint, width)
 		return layerList
 
+	def getSmearedEvent(self, tsm, esm):
+		smearedHitPoints = []
+		for hp in self.hitPoints:
+			#smear with gaussian of sigma = tsm or esm
+			newt = np.random.normal(hp.getT(), tsm)
+			newe = np.random.normal(hp.getE(), esm*hp.getE())
+			#keep positions unsmeared
+			x, y, z = hp.getXYZ()
+			newHP = HitPoint.HitPoint(x, y, z, newt, newe, 1)
+			smearedHitPoints.append(newHP)
+
+		#return a new event with these hitpoints and
+		#the same event number
+		return Event(smearedHitPoints, self.evNum)
+
+	#draws the detector as a set of cylinders
+	#with hard coded radii. See
+	#"GearOutput.xml" files for geometry values
+	def drawDetector(self, ax):
+		#L is half-z length
+		def drawCylinder(ax, rad, L, color):
+			#cylinder mesh
+			x = np.linspace(-rad, rad, 100)
+			z = np.linspace(-L, L)
+			Xc, Zc = np.meshgrid(x, z)
+			Yc = np.sqrt(rad**2 - Xc**2)
+
+			#grid parameters
+			rstride = 20
+			cstride = 10
+			ax.plot_surface(Xc, Yc, Zc, alpha=0.2, rstride=rstride, cstride=cstride, color=color)
+			ax.plot_surface(Xc, -Yc, -Zc, alpha=0.2, rstride=rstride, cstride=cstride, color=color)
+
+		#half zs
+		tpc_ecal_hcal_z = 2350
+
+		#radii
+		tpc_rin = 329
+		tpc_rout = 1808
+		ecal_rin = 1847.4
+		hcal_rin = 2058
+		hcal_rout = 3385.5
+
+		drawCylinder(ax, tpc_rin, tpc_ecal_hcal_z, 'b')
+		drawCylinder(ax, tpc_rout, tpc_ecal_hcal_z, 'b')
+		drawCylinder(ax, ecal_rin, tpc_ecal_hcal_z, 'y')
+		drawCylinder(ax, hcal_rin, tpc_ecal_hcal_z, 'y')
+		drawCylinder(ax, hcal_rout, tpc_ecal_hcal_z, 'r')
+
+
+
+
+
 	# Produces 3D event display of the pixels, where the color is the energy deposition
-	def energyDisplay(self):
+	def energyDisplay(self, drawDetector=False):
 		x = []
 		y = []
 		z = []
@@ -59,13 +113,13 @@ class Event:
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		ax.set_xlim(-35, 35)
-		ax.set_ylim(1840, 1910)
-	        ax.set_zlim(-35, 35)
+		if(drawDetector == True):
+			self.drawDetector(ax)
+
 		plt.show()	
 
 	# Produces 3D event display of the pixels, where the color is the time of the event
-	def timeDisplay(self):
+	def timeDisplay(self, drawDetector=False):
 		x = []
 		y = []
 		z = []
@@ -87,10 +141,10 @@ class Event:
 		ax.set_xlabel("x")
 		ax.set_ylabel("y")
 		ax.set_zlabel("z")
-		ax.set_xlim(-35, 35)
-		ax.set_ylim(1840, 1910)
-	        ax.set_zlim(-35, 35)
-                plt.show()	
+		if(drawDetector == True):
+			self.drawDetector(ax)
+        
+        plt.show()	
 
 	# Histograms the times of each pixel, weighted by the energy deposited.
 	# The time is relative to the first hit
