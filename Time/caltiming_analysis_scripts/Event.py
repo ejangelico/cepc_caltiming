@@ -195,34 +195,49 @@ class Event:
 		
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	def algo_linearFirstTimeByLayer(self, plotting = False):
-		ti = time.time()
-		layers = self.makeLayers(1.0)
-		tf = time.time()
-		print "Time for Event.makeLayers():", tf-ti
-		sys.exit()
-		tList = []
-		dList = []
-		for layer in layers:
-			tList.append(layer.getFirstTime())
-			dList.append(layer.d0)
-		fitParams = linregress(dList, tList)
-		linFitFunc = np.poly1d(fitParams[:2])	
+		layerWidth = 1.0 # mm
+		timeCutoffLo = 5.5 # ns
+		timeCutoffHi = 6.6 # ns 
+		dCutoffLo = 1800 # mm
+		dCutoffHi = 2050 # mm
 		
-		tEst = linFitFunc(min(dList))
+		layers = self.makeLayers(1.0)
 
+		dList = []
+		tList = []
+		for layer in layers:
+			dList.append(layer.d0)
+			tList.append(layer.getFirstTime())
+	
+		tList_new = []
+		dList_new = []
+		for i in range(0, len(tList)):
+			if (timeCutoffLo < tList[i] < timeCutoffHi) and (dCutoffLo < dList[i] < dCutoffHi):
+				tList_new.append(tList[i])
+				dList_new.append(dList[i])
+		tList = tList_new
+		dList = dList_new
 
-		print "Slope:", fitParams[0], "ns/mm"
-		print "1/Slope:", 1/fitParams[0], "mm/ns"
-		print "y-int:", fitParams[1], "mm"
-		print "Estimate of shower start time:", tEst, "ns"
-		print "Truth value:", min(tList), "ns"
-		print "Difference:", np.abs(tEst - min(tList)), "ns"
+		fitParams = linregress(dList, tList)
+		
+		tEst = fitParams[0]*min(dList)+fitParams[1]
 
-		x = np.linspace(min(dList), max(dList), 10)
-		y = [linFitFunc(z) for z in x]	
+		if plotting:
+			print "Slope:", fitParams[0], "ns/mm"
+			print "1/Slope:", 1/fitParams[0], "mm/ns"
+			print "y-int:", fitParams[1], "mm"
+			print "Estimate of shower start time:", tEst, "ns"
+			print "Truth value:", min(tList), "ns"
+			print "Difference:", np.abs(tEst - min(tList)), "ns"
 
-		plt.plot(x, y, 'r')
-		plt.plot(dList, tList, 'ko')
-		plt.xlabel("Depth (mm)")
-		plt.ylabel("Time (ns)")
-		plt.show()
+			linFitFunc = np.poly1d(fitParams[:2])	
+			x = np.linspace(min(dList), max(dList), 10)
+			y = [linFitFunc(z) for z in x]	
+
+			plt.plot(x, y, 'r')
+			plt.plot(dList, tList, 'ko')
+			plt.xlabel("Depth (mm)")
+			plt.ylabel("Time (ns)")
+			plt.show()
+
+		return tEst, min(tList)

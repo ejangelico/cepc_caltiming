@@ -2,6 +2,37 @@ import sys
 import Event
 import cPickle as pickle 
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats
+
+def FWHM(xVals, yVals):
+		xVals = xVals.tolist()
+		yVals = yVals.tolist()
+
+		maxIndex = yVals.index(max(yVals))
+		peakCount      = yVals[maxIndex]
+		peakCountx  = xVals[maxIndex]
+
+		for i in range(maxIndex, len(xVals)):
+			if yVals[i] < peakCount/2.0:
+				break
+		x0 = xVals[i-1]
+		y0 = yVals[i-1]
+		x1 = xVals[i]
+		y1 = yVals[i]
+		tHalfUp = x0 + (0.5 *peakCount - y0) *(x1-x0)/(y1-y0)
+
+		for i in range(0, maxIndex):
+			if yVals[i] > peakCount/2.0:
+				break
+		x0 = xVals[i-1]
+		y0 = yVals[i-1]
+		x1 = xVals[i]
+		y1 = yVals[i]
+		tHalfDown = x0 + (0.5 *peakCount - y0) *(x1-x0)/(y1-y0)
+
+		return tHalfUp-tHalfDown
+
 
 class DataSet:
 	def __init__(self, events = None):
@@ -62,6 +93,38 @@ class DataSet:
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
 
-	# Fills the layerBins array with the bin edges for the physical layers
-	def getLayers():	
-		pass
+	def timeReco(self, algo = 0, plotting = False):
+		tEstList = []
+		tTruList = []
+		tDiffList = []
+		for event in self.events:
+			if algo == 0:
+				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			else:
+				print "Please specify the time reconstruction algorithm"
+				sys.exit()
+			tEstList.append(tEst)
+			tTruList.append(tTru)
+			tDiffList.append(tEst-tTru)
+
+		tDiffCounts, tDiffBins = np.histogram(tDiffList, 50)
+		tAv = np.average(tDiffList)
+		tFWHM = FWHM(tDiffBins, tDiffCounts)
+		tStd = np.std(tDiffList)
+		tMed = np.median(tDiffList)
+		tSkewness = scipy.stats.skew(tDiffList)
+		tSkewTest = scipy.stats.skewtest(tDiffList)[0] # z-score of skewness test
+
+		print "Mean difference:   ", round(1000*tAv, 4), "ps"
+		print "Median difference: ", round(1000*tMed, 4), "ps"
+		print "FHWM:              ", round(1000*tFWHM, 4), "ps"
+		print "Standard Deviation:", round(1000*tStd, 4), "ps"
+		print "Skewness:          ", round(tSkewness, 4) 
+		print "Skewtest z-score:  ", round(tSkewTest, 4)
+
+		if plotting:
+			tDiffBins = [x*1000 for x in tDiffBins]
+			plt.bar(tDiffBins[:-1], tDiffCounts, width = tDiffBins[1]-tDiffBins[0], color = 'b')
+			plt.xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
+			plt.ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
+			plt.show()
