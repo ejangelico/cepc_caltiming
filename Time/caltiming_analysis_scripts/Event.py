@@ -151,7 +151,7 @@ class Event:
 		if(drawDetector == True):
 			self.drawDetector(ax)
         
-        plt.show()	
+		plt.show()	
 
 	# Histograms the times of each pixel, weighted by the energy deposited.
 	# The time is relative to the first hit
