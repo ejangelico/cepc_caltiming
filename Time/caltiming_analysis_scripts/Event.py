@@ -39,12 +39,21 @@ class Event:
 				layerList[-1].initializeWithPoint(hitPoint, width)
 		return layerList
 
+	# Smear all the hit point times and energies by Gaussians with width tsm, esm, respectively
 	def getSmearedEvent(self, tsm, esm):
 		smearedHitPoints = []
 		for hp in self.hitPoints:
 			#smear with gaussian of sigma = tsm or esm
-			newt = np.random.normal(hp.getT(), tsm)
-			newe = np.random.normal(hp.getE(), esm*hp.getE())
+			if tsm > 0:
+				newt = np.random.normal(hp.getT(), tsm)
+			else:
+				newt = hp.getT()
+			
+			if esm > 0:
+				newe = np.random.normal(hp.getE(), esm*hp.getE())
+			else:
+				newe = hp.getE()
+
 			#keep positions unsmeared
 			x, y, z = hp.getXYZ()
 			newHP = HitPoint.HitPoint(x, y, z, newt, newe, 1)
@@ -87,10 +96,6 @@ class Event:
 		drawCylinder(ax, ecal_rin, tpc_ecal_hcal_z, 'y')
 		drawCylinder(ax, hcal_rin, tpc_ecal_hcal_z, 'y')
 		drawCylinder(ax, hcal_rout, tpc_ecal_hcal_z, 'r')
-
-
-
-
 
 	# Produces 3D event display of the pixels, where the color is the energy deposition
 	def energyDisplay(self, drawDetector=False):
@@ -195,14 +200,19 @@ class Event:
 		plt.show()
 		
 	# Does a linear fit to the first time of arrival vs depth in each layer
-	def algo_linearFirstTimeByLayer(self, plotting = False):
+	# layerWidth = width around center point of each layer, mm
+	# timeCutoffLo = first hit time accepted by algo, ns
+	# timeCutoffHi = last hit time accepted, ns
+	# dCutoffLo = lowest layer position accepted, mm
+	# dCutoffHi = highest layer position accepted, mm
+	def algo_linearFirstTimeByLayer(self, layerWidth = 1.0, timeCutoffLo = 5.5, timeCutoffHi = 6.6, dCutoffLo = 1800, dCutoffHi = 1050, plotting = False):
 		layerWidth = 1.0 # mm
 		timeCutoffLo = 5.5 # ns
 		timeCutoffHi = 6.6 # ns 
 		dCutoffLo = 1800 # mm
 		dCutoffHi = 2050 # mm
-		
-		layers = self.makeLayers(1.0)
+
+		layers = self.makeLayers(layerWidth)
 
 		dList = []
 		tList = []

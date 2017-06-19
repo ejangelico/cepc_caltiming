@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 
+# Given x-values and y-values of a curve with one peak, computes the full width at half max, in units of x
 def FWHM(xVals, yVals):
 		xVals = xVals.tolist()
 		yVals = yVals.tolist()
@@ -35,9 +36,11 @@ def FWHM(xVals, yVals):
 
 
 class DataSet:
-	def __init__(self, events = None):
+	def __init__(self, events = None, tSmear = None, eSmear = None):
 		self.events = events
+
 		self.tSmear = tSmear 	#smear 1sigma in ns
+
 		#fractional energy resolution
 		#takes values between [0.0, 1.0]
 		self.eSmear = eSmear
@@ -57,6 +60,7 @@ class DataSet:
 		plt.ylabel("Total shower energy/bin (GeV/ns)")
 		plt.show()
 
+	# Plots the depth (radius) vs time of every hit point
 	def plotAllDvsT(self):
 		d = []
 		t = []
@@ -70,16 +74,20 @@ class DataSet:
 		plt.ylabel("Time of Hit (ns)")
 		plt.show()
 
+	# Makes a new dataset with smeared time/energy
+	def smear(self, tsm, esm):
+		print "Smearing data: tsm =", tsm, "ns; esm =", esm
+		#make a new list of events
+		smearedEvents = []
+
+		for ev in self.events:
+			newEvent = ev.getSmearedEvent(tsm, esm)
+			smearedEvents.append(newEvent)
+
+		#create new data set
+		return DataSet(smearedEvents, tsm, esm)
+
 	def smearAndSave(self, tsm, esm, outfilename):
-		#don't smear this event if it already has been
-		#smeared. Then the full smear is the addition of the
-		#smears in quadrature. Just start from the original file
-		#if(self.tSmear != 0 or self.eSmear != 0):
-		#	print "This data set has already been smeared"
-		#	print "Find the original set and smear that instead"
-		#	return
-
-
 		#make a new list of events
 		smearedEvents = []
 
@@ -93,10 +101,13 @@ class DataSet:
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
 
+	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
 		tTruList = []
 		tDiffList = []
+		print "Reconstructing time for each event...",
+		sys.stdout.flush()
 		for event in self.events:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
@@ -106,6 +117,8 @@ class DataSet:
 			tEstList.append(tEst)
 			tTruList.append(tTru)
 			tDiffList.append(tEst-tTru)
+		print "Done."
+		sys.stdout.flush()
 
 		tDiffCounts, tDiffBins = np.histogram(tDiffList, 50)
 		tAv = np.average(tDiffList)
@@ -128,3 +141,36 @@ class DataSet:
 			plt.xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
 			plt.ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
 			plt.show()
+
+		return [tAv, tMed, tFWHM, tStd, tSkewness, tSkewTest]
+
+	def timeRecoSmearing(self, smearTimeList = None):
+		if smearTimeList is None:
+			smearTimeList = [0.0, 0.001, 0.01, 0.1]
+		AvList = []
+		MedList = []
+		FWHMList = []
+		StdList = []
+		for deltaT in smearTimeList:
+			smearedData = self.smear(tsm = deltaT, esm = 0)
+			print "Time smearing:", deltaT, "ns"
+			recoStats = smearedData.timeReco()
+			AvList.append(1000*recoStats[0])
+			MedList.append(1000*recoStats[1])
+			FWHMList.append(1000*recoStats[2])
+			StdList.append(1000*recoStats[3])
+
+		smearTimeList = [1000*x for x in smearTimeList]
+		plt.plot(smearTimeList, AvList, 'k')
+		plt.plot(smearTimeList, MedList, 'r')
+		plt.ylabel("Difference from Truth (ps)")
+		plt.xlabel("Smear Time (ps)")
+		plt.legend(["Mean", "Median"])
+		plt.show()
+
+		plt.plot(smearTimeList, FWHMList, 'k')
+		plt.plot(smearTimeList, StdList, 'r')
+		plt.ylabel("Uncertainty on Reconstructed Time (ps)")
+		plt.xlabel("Pixel Smear Time (ps)")
+		plt.legend(["FWHM", "Std. Dev."])
+		plt.show()
