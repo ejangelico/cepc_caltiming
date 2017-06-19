@@ -13,13 +13,14 @@ if __name__ == "__main__":
 	#data.events[7].energyDisplay(True)
 	#data.events[100].timeDisplay()
 	#data.events[100].printEvent()
-	data.events[10].plotTimeHist(40)
+	#data.events[10].plotTimeHist(40)
+	data.events[10].algo_linearFirstTimeByLayer()
 	#ti = time.time()
 	#data.smearAndSave(.001, 0.01, "../pickles/electrons/10GeV_smeared_1ps_1perc.p")
 	#tf = time.time()
 	#print "took " + str(tf - ti) + " seconds to smear" 
-	smearedData = pickle.load(open("../pickles/electrons/10GeV_smeared_1ps_1perc.p", 'rb'))
-	smearedData.events[10].plotTimeHist(40)
+	#smearedData = pickle.load(open("../pickles/electrons/10GeV_smeared_1ps_1perc.p", 'rb'))
+	#smearedData.events[10].plotTimeHist(40)
 	#data.avTimeHist(1000, 0, 1)
 	
 	#data.plotAllDvsT()

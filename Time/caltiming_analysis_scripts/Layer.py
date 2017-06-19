@@ -10,7 +10,7 @@ class Layer:
 		self.hitPoints = [] # An array of the points that are in the layer
 
 	# Given a point, will initialize the layer
-	def intializeWithPoint(self, hitPoint, width = None, (dmin, dmax) = (None, None)):
+	def initializeWithPoint(self, hitPoint, width = None, (dmin, dmax) = (None, None)):
 		if (width is None) and (dmin is None):
 			print "Must initialize layer size"
 			return

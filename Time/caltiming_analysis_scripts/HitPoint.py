@@ -36,10 +36,6 @@ class HitPoint:
 	def __mul__(self, b):
 		return ((self.getX() * b.getX()) + (self.getY() * b.getY()) + (self.getZ() * b.getZ()))
 
-	#scalar multiplication
-	def scale(self, b):
-		return Point(b*self.getX(), b*self.getY(), b*self.getZ(), self.t, self.E 1)
-
 	def __str__(self):
 		return "(" + str(self.getX()) + ", " + str(self.getY()) + ", " + str(self.getZ()) + "), (t = " + str(self.getT()) + ", E = " + str(self.getE()) + ")"
 

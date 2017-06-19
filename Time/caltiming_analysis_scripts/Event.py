@@ -3,10 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+from scipy.stats import linregress
 import numpy as np
+import time
 import sys
 import DataSet
 import HitPoint
+import Layer
 
 class Event:
 	def __init__(self, hitPoints=None, hitEn=None, evNum=None):
@@ -191,14 +194,35 @@ class Event:
 		plt.show()
 		
 	# Does a linear fit to the first time of arrival vs depth in each layer
-	def algo_linearFirstTimeByLayer(self):
+	def algo_linearFirstTimeByLayer(self, plotting = False):
+		ti = time.time()
 		layers = self.makeLayers(1.0)
+		tf = time.time()
+		print "Time for Event.makeLayers():", tf-ti
+		sys.exit()
 		tList = []
 		dList = []
 		for layer in layers:
 			tList.append(layer.getFirstTime())
 			dList.append(layer.d0)
-		plt.plot(d0, tList)
+		fitParams = linregress(dList, tList)
+		linFitFunc = np.poly1d(fitParams[:2])	
+		
+		tEst = linFitFunc(min(dList))
+
+
+		print "Slope:", fitParams[0], "ns/mm"
+		print "1/Slope:", 1/fitParams[0], "mm/ns"
+		print "y-int:", fitParams[1], "mm"
+		print "Estimate of shower start time:", tEst, "ns"
+		print "Truth value:", min(tList), "ns"
+		print "Difference:", np.abs(tEst - min(tList)), "ns"
+
+		x = np.linspace(min(dList), max(dList), 10)
+		y = [linFitFunc(z) for z in x]	
+
+		plt.plot(x, y, 'r')
+		plt.plot(dList, tList, 'ko')
 		plt.xlabel("Depth (mm)")
 		plt.ylabel("Time (ns)")
 		plt.show()

@@ -11,6 +11,8 @@ class DataSet:
 		#takes values between [0.0, 1.0]
 		self.eSmear = eSmear
 
+		self.layerBins = None
+
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
 		timeHist = [0 for _ in range(numBins)]
@@ -59,3 +61,7 @@ class DataSet:
 		#save the dataset to file
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
+
+	# Fills the layerBins array with the bin edges for the physical layers
+	def getLayers():	
+		pass
