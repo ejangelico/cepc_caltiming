@@ -12,14 +12,13 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/electrons/AnaHit_electron_10GeV_3760.p", 'rb'))
+	data = pickle.load(open("../pickles/pions/noB/5GeV_1000evts.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
-	
-	data.timeReco(plotting = True)
+	#data.timeReco(plotting = True)
 	#data.events[7].energyDisplay(True)
-	#data.events[100].timeDisplay()
+	#data.events[100].timeDisplay(True)
 	#data.events[100].printEvent()
 	#data.events[10].plotTimeHist(40)
 	#data.events[10].algo_linearFirstTimeByLayer()
@@ -45,8 +44,8 @@ if __name__ == "__main__":
 		plt.show()
 		if(raw_input(">") == 'q'):
 			break
-	sys.exit()
 	"""
+
 	"""
 	hits, bin_edges = data.events[100].timeHist(10)
 	times = []

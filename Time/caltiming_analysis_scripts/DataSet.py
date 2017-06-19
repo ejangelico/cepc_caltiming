@@ -4,6 +4,7 @@ import cPickle as pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
+import Helper
 
 def FWHM(xVals, yVals):
 		xVals = xVals.tolist()
@@ -93,6 +94,21 @@ class DataSet:
 		pickle.dump(smearedData, open(outfilename, 'wb'))
 		return
 
+	#histograms the longitudinal shower depth
+	#as defined in the CALICE paper as "Z0"
+	#in units of the pion interaction length in tungsten
+	def histLongitudinalDepth(self):
+		Z0 = []
+		for ev in self.events:
+			Z0.append(ev.getShowerDepth())
+
+		fig, ax = plt.subplots()
+		ax.hist(Z0)
+		ax.set_xlabel("Longitudinal shower depth (lambda_i)")
+		plt.show()
+
+
+
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
 		tTruList = []
@@ -128,3 +144,6 @@ class DataSet:
 			plt.xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
 			plt.ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
 			plt.show()
+
+
+
