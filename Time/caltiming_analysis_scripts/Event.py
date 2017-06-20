@@ -1,4 +1,4 @@
-import matplotlib
+import matplotlib 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
 from mpl_toolkits.mplot3d import Axes3D
@@ -129,6 +129,44 @@ class Event:
 		drawCylinder(ax, ecal_rin, tpc_ecal_hcal_z, 'y')
 		drawCylinder(ax, hcal_rin, tpc_ecal_hcal_z, 'y')
 		drawCylinder(ax, hcal_rout, tpc_ecal_hcal_z, 'r')
+
+	#make 2 subplots that are 2D projections of eachother
+	def projectionDisplay(self):
+		x = []
+		y = []
+		z = []
+		t = []
+		for hit in self.hitPoints:
+			x.append(hit.getX())
+			y.append(hit.getY())
+			z.append(hit.getZ())
+			t.append(hit.getT())
+		
+		cm = plt.get_cmap('jet')
+		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=max(t))
+		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
+		fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(13, 6))
+
+
+		ax1.scatter(x, y, c=scalarMap.to_rgba(t))
+		ax1.set_xlim([-1000, 1000])
+		ax1.set_ylim([1800, 2100])
+		ax1.set_xlabel("x-projected axis")
+		ax1.set_ylabel("y-projected axis")
+		#hcal boundary
+		ax1.plot([-1000, 1000], [2058, 2058], 'k-')
+
+		ax2.scatter(z, y, c=scalarMap.to_rgba(t))
+		ax2.set_xlim([-1000, 1000])
+		ax2.set_ylim([1800, 2100])
+		ax2.set_xlabel("z-projected axis")
+		ax2.set_ylabel("y-projected axis")
+		ax2.plot([-1000, 1000], [2058, 2058], 'k-')
+
+
+		scalarMap.set_array(t)
+		plt.show()
+
 
 	# Produces 3D event display of the pixels, where the color is the energy deposition
 	def energyDisplay(self, drawDetector=False):
