@@ -7,8 +7,10 @@ from scipy.stats import linregress
 import numpy as np
 import time
 import sys
+import Point
 import DataSet
 import HitPoint
+import Point
 import Helper
 import Layer
 
@@ -71,6 +73,55 @@ class Event:
 
 		return layerList
 
+	# removes hit points in the event that do not
+	# pass a set of cuts. Passing is constituted by 
+	# the point lying in the range, for example trange
+	# that is a two element list, trange = [floor, ceiling]
+	#
+	#remove = False/True option decides whether to actually remove
+	#elements of the self.hitPoints list, or just to preserve them and 
+	#return a new list of hits that passed
+	def cutHitPoints(self, rhorange=None, phirange=None, zrange=None, trange=None, remove=False):
+		removes = [] #list of hitpoints to remove
+		passes = []
+		for hp in self.hitPoints:
+			#cumbersome if structure is so that
+			#all combinations of ranges can be
+			#allowed to be None or non-None
+			if(rhorange == None):
+				pass
+			elif(min(rhorange) > hp.getRho() or max(rhorange) < hp.getRho()):
+				removes.append(hp)
+				continue
+
+			if(phirange == None):
+				pass
+			elif(min(phirange) > hp.getPhi() or max(phirange) < hp.getPhi()):
+				removes.append(hp)
+				continue
+
+			if(zrange == None):
+				pass
+			elif(min(zrange) > hp.getZ() or max(zrange) < hp.getZ()):
+				removes.append(hp)
+				continue
+
+			if(trange == None):
+				pass
+			elif(min(trange) > hp.getT() or max(trange) < hp.getT()):
+				removes.append(hp)
+				continue
+
+			#if it made it this far
+			passes.append(hp)
+
+		#remove the points that didn't pass
+		if(remove==True):
+			for rm in removes:
+				self.hitPoints.remove(rm)
+
+		return passes
+
 
 	# Smear all the hit point times and energies by Gaussians with width tsm, esm, respectively
 	def getSmearedEvent(self, tsm, esm):
@@ -131,7 +182,7 @@ class Event:
 		drawCylinder(ax, hcal_rout, tpc_ecal_hcal_z, 'r')
 
 	#make 2 subplots that are 2D projections of eachother
-	def projectionDisplay(self):
+	def projectionDisplay(self, line=None):
 		x = []
 		y = []
 		z = []
@@ -143,7 +194,7 @@ class Event:
 			t.append(hit.getT())
 		
 		cm = plt.get_cmap('jet')
-		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=max(t))
+		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=min(t)+6)
 		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 		fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(13, 6))
 
@@ -162,6 +213,27 @@ class Event:
 		ax2.set_xlabel("z-projected axis")
 		ax2.set_ylabel("y-projected axis")
 		ax2.plot([-1000, 1000], [2058, 2058], 'k-')
+
+		#plot a line on both plots as well
+		if(line==None):
+			pass
+		else:
+			#line is a point and a unit vector
+			#line = [Point, Point] from the Point class
+
+			#i use this to generate two points that I draw
+			#a line between
+			t1 = -10000
+			t2 = 10000
+			d0 = line[0] #the intercepts
+			v = line[1]  #the slope parameter
+			xx = [d0.getX() + v.getX()*t1, d0.getX() + v.getX()*t2]
+			yy = [d0.getY() + v.getY()*t1, d0.getY() + v.getY()*t2]
+			zz = [d0.getZ() + v.getZ()*t1, d0.getZ() + v.getZ()*t2]
+
+			ax1.plot(xx, yy, 'r-')
+			ax2.plot(zz, yy, 'r-')
+
 
 
 		scalarMap.set_array(t)
@@ -304,6 +376,39 @@ class Event:
 
 		return Z0
 
+
+	#this is the first pass cut for a general
+	#hadronic shower in the e-cal. It trims noise
+	#and neutron fat to leave a nice shower core
+	#Tested on 7.5 GeV pions with no B field
+	def hadronicNoiseCut(self):
+		#make a very rough noise cut
+
+		#cut out late time first
+		tlist = [_.getT() for _ in self.hitPoints]
+		tmin = min(tlist)
+		twidth = 6	
+		trange = [tmin, tmin + twidth]
+		cutpoints = self.cutHitPoints(rhorange=None, phirange=None, zrange=None, trange=trange, remove=False)
+
+		#use those cut points to calculate spacial cuts
+		philist = [_.getPhi() for _ in cutpoints]
+		zlist = [_.getZ() for _ in cutpoints]
+		meanphi = np.mean(philist)
+		meanz = np.mean(zlist)
+		#halfwidths
+		zwidth = 250 #mm
+		phiwidth = np.pi/8.0 
+		#cutranges
+		zrange = [meanz - zwidth, meanz + zwidth]
+		phirange = [meanphi - phiwidth, meanphi + phiwidth]
+		trimmedEvent = Event(cutpoints, 0)
+		cutpoints = trimmedEvent.cutHitPoints(rhorange=None, phirange=phirange, zrange=zrange, trange=None, remove=False)
+		trimmedEvent = Event(cutpoints, self.evNum)
+
+		return trimmedEvent
+
+
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm
 	# timeCutoffLo = first hit time accepted by algo, ns
@@ -362,3 +467,42 @@ class Event:
 			plt.show()
 
 		return tEst, min(tList)
+
+	def algo_rodLinearWithDepth(self):
+
+		#perform initial rough cuts
+		cutEvent = self.hadronicNoiseCut()
+		cutEvent.projectionDisplay()
+
+		#here input the algorithm that finds
+		#the shower axis
+		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1)]
+
+		#here, find the best rod radius to use
+		rodRadius = 10 	#mm
+
+
+		passed = []		#hit points that are inside the rod
+		axisDepths = []	#hit depths relative to the shower axis
+		#two points on the line
+		x1 = showerAxis[0]
+		x2 = x1 + showerAxis[1]
+		for hp in cutEvent.hitPoints:
+			x0 = Point.Point(hp.getX(), hp.getY(), hp.getZ(), 1)
+			#find the distance of the perpendicular
+			#to the axis line from hp
+			d = ((x0 - x1).cross((x0 - x2))).getMag()/(x2 - x1).getMag()
+			#if this distance is inside the rod radius
+			#and the point is in the calorimeter "1848"mm
+			if(d <= rodRadius and hp.getRho() >= 1848):
+				passed.append(hp)
+				
+
+		trimmedEvent = Event(passed, 0)
+		trimmedEvent.projectionDisplay(showerAxis)
+
+
+
+
+
+
