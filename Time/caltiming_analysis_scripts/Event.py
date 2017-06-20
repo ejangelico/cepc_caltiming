@@ -27,7 +27,7 @@ class Event:
 		print "Event Energy:", self.hitEn
 
 	# Returns an array of layers of all the points in the event
-	def makeLayers(self, width):
+	def makeLayersWithPoints(self, width):
 		layerList = []
 		for hitPoint in self.hitPoints:
 			hitAdded = False
@@ -39,6 +39,38 @@ class Event:
 				layerList.append(Layer.Layer())
 				layerList[-1].initializeWithPoint(hitPoint, width)
 		return layerList
+
+	#makes layers of constant width at various
+	#rho values throughout the ecal and hcal
+	def makeLayersWithRadii(self, width):
+		#make empty layers first
+		layerList = []
+		rad = 1848 + width/2.0 	#mm start of ecal + 1 width
+		hcalrad = 3385
+		while (rad < hcalrad):
+			tempLay = Layer.Layer()
+			tempLay.initializeWithRadius(rad, width)
+			layerList.append(tempLay)
+			rad += width
+
+		#fill layers with the hitpoints
+		for hitPoint in self.hitPoints:
+			for layer in layerList:
+				if layer.addPoint(hitPoint):
+					break
+
+		#remove layers with no hitpoints
+		removes = []
+		for l in layerList:
+			if(l.hitPoints == None):
+				removes.append(l)
+
+		for rm in removes:
+			layerList.remove(rm)
+
+
+		return layerList
+
 
 	# Smear all the hit point times and energies by Gaussians with width tsm, esm, respectively
 	def getSmearedEvent(self, tsm, esm):
@@ -127,7 +159,8 @@ class Event:
 		if(drawDetector == True):
 			self.drawDetector(ax)
 
-		plt.show()	
+		plt.show()
+		return (fig, ax)	
 
 	# Produces 3D event display of the pixels, where the color is the time of the event
 	def timeDisplay(self, drawDetector=False):
