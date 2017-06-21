@@ -2,6 +2,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 import Point
+import numpy as np
 
 
 def resize(fig, ax):
@@ -59,7 +60,8 @@ def getCylinderIntersection(radius, line):
 	v = line[1]
 	x = line[0]
 	A = (v - cylinderAxis.scale(v*cylinderAxis))*(v - cylinderAxis.scale(v*cylinderAxis))
-	B = 2*(v - cylinderAxis.scale(v*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis))
+	B = (v - cylinderAxis.scale(v*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis))
+	B = 2*B
 	C = (x - cylinderAxis.scale(x*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis)) - radius**2
 	#two solution from quadratic equation
 	t_plus = (1.0/(2*A))*(-1*B + np.sqrt(B*B - 4*A*C))

@@ -4,6 +4,7 @@ import matplotlib.cm as cmx
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.stats import linregress
+from scipy.optimize import least_squares
 import numpy as np
 import time
 import sys
@@ -239,8 +240,8 @@ class Event:
 		if(point == None):
 			pass
 		else:
-			ax1.plot(point.getX(), point.getY(), 'ro', markersize=20)
-			ax2.plot(point.getZ(), point.getY(), 'ro', markersize=20)
+			ax1.plot(point.getX(), point.getY(), 'kd', markersize=9)
+			ax2.plot(point.getZ(), point.getY(), 'kd', markersize=9)
 
 
 
@@ -479,12 +480,17 @@ class Event:
 
 	def algo_rodLinearWithDepth(self):
 
+
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
+		if(len(cutEvent.hitPoints) == 0):
+			print "did pass rough cut, adapt the cutting algorithm later"
+			print "you need to be able to make a general rough cut on noise"
+			return
 
 		#here input the algorithm that finds
 		#the shower axis
-		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1)]
+		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
 		#find the intersection point of this showerAxis with
 		#the cylinder of the e-cal radius. Two points satisfy
 		#equation
@@ -502,17 +508,19 @@ class Event:
 		else:
 			ecalIntersect = point_minus
 
-
+	
 
 		#here, find the best rod radius to use
-		rodRadius = 10 	#mm
+		rodRadius = 15 	#mm
 
 
 		passed = []		#hit points that are inside the rod
-		axisDepths = []	#hit depths relative to the shower axis
+		rodDepths = []	#hit depths relative to the shower axis intersection with ecal
+		rodTimes = []	#global hit time but for events that pass rod cut
+
 		#two points on the line
-		x1 = showerAxis[0]
-		x2 = x1 + showerAxis[1]
+		x1 = ecalIntersect
+		x2 = x1 - showerAxis[1]
 		for hp in cutEvent.hitPoints:
 			x0 = Point.Point(hp.getX(), hp.getY(), hp.getZ(), 1)
 			#find the distance of the perpendicular
@@ -522,10 +530,44 @@ class Event:
 			#and the point is in the calorimeter "1847.4"mm
 			if(d <= rodRadius and hp.getRho() >= 1847.4):
 				passed.append(hp)
+				#distance along axis from point x1 to 
+				#the perpendicular intersection of axis
+				#with hit point
+				h = (x1 - x0).getMag()
+				D = np.sqrt(h*h - d*d)
+				#because x1 is the ecal Intersection,
+				#D is the depth from the intersection
+				rodDepths.append(D)
+				rodTimes.append(hp.getT())
 				
+		if(len(passed) == 0):
+			print "Rod captured no hits"
+			print "Either the rod is too small or the showerAxis is poorly fit"
+			return None
 
-		trimmedEvent = Event(passed, 0)
-		trimmedEvent.projectionDisplay(showerAxis)
+
+		#calculate fraction of total energy
+		#contained in the rod--uses trimmed event so
+		#as to ignore noise/etc
+		etot = np.sum([_.getE() for _ in cutEvent.hitPoints])
+		erod = np.sum([_.getE() for _ in passed])
+		efrac = erod/etot
+
+
+		#fit the depth vs time data with a line
+		#that has slope of 1/speed of light. One
+		#parameter fit
+		"""
+		#line with p as the y intercept
+		c = 299.792458
+		fitfunc = lambda p, x: (1.0/c)*x + p[0]
+		errfunc = lambda p, x, y: fitfunc(p, x) - y
+		pguess = [4]	#ns
+		result = least_squares(errfunc, pguess, args=(np.array(rodDepths), np.array(rodTimes)))
+		cept = result.x[0]
+		"""
+
+		
 
 
 
