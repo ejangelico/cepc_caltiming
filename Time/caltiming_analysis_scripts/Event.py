@@ -47,7 +47,7 @@ class Event:
 	def makeLayersWithRadii(self, width):
 		#make empty layers first
 		layerList = []
-		rad = 1848 + width/2.0 	#mm start of ecal + 1 width
+		rad = 1847.3 + width/2.0 	#mm start of ecal + 1 width
 		hcalrad = 3385
 		while (rad < hcalrad):
 			tempLay = Layer.Layer()
@@ -171,7 +171,7 @@ class Event:
 		#radii
 		tpc_rin = 329
 		tpc_rout = 1808
-		ecal_rin = 1847.4
+		ecal_rin = 1847.3
 		hcal_rin = 2058
 		hcal_rout = 3385.5
 
@@ -182,7 +182,9 @@ class Event:
 		drawCylinder(ax, hcal_rout, tpc_ecal_hcal_z, 'r')
 
 	#make 2 subplots that are 2D projections of eachother
-	def projectionDisplay(self, line=None):
+	#line will plot a line
+	#point will plot a big red point
+	def projectionDisplay(self, line=None, point=None):
 		x = []
 		y = []
 		z = []
@@ -233,6 +235,13 @@ class Event:
 
 			ax1.plot(xx, yy, 'r-')
 			ax2.plot(zz, yy, 'r-')
+
+		if(point == None):
+			pass
+		else:
+			ax1.plot(point.getX(), point.getY(), 'ro', markersize=20)
+			ax2.plot(point.getZ(), point.getY(), 'ro', markersize=20)
+
 
 
 
@@ -354,10 +363,10 @@ class Event:
 	#of an event based on the definition of 
 	#"Z0" from the CALICE paper 2014
 	def getShowerDepth(self):
-		rho_start = 1847.3 #the front face of the e-cal in rho (mm)
+		rho_start = 1847.4 #the front face of the e-cal in rho (mm)
 		timeCutoffLo = 6 # ns
 		timeCutoffHi = 8 # ns 
-		dCutoffLo = 1847.3 # mm
+		dCutoffLo = 1847.4 # mm
 		dCutoffHi = 3385 # mm
 
 		Z0 = 0
@@ -419,7 +428,7 @@ class Event:
 		layerWidth = 1.0 # mm
 		timeCutoffLo = 5.5 # ns
 		timeCutoffHi = 6.6 # ns 
-		dCutoffLo = 1847.3 # mm
+		dCutoffLo = 1847.4 # mm
 		dCutoffHi = 2050 # mm
 
 		layers = self.makeLayers(layerWidth)
@@ -472,11 +481,28 @@ class Event:
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
-		cutEvent.projectionDisplay()
 
 		#here input the algorithm that finds
 		#the shower axis
 		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1)]
+		#find the intersection point of this showerAxis with
+		#the cylinder of the e-cal radius. Two points satisfy
+		#equation
+		point_plus, point_minus = Helper.getCylinderIntersection(1847.4, showerAxis)
+
+		#find which point is closest to the earliest
+		#point in the remaining trimmed hit points. This
+		#should always be the correct intersection with the cylinder
+		#because the intersections are on opposite poles. 
+		firstHit = Helper.getFirstHit(cutEvent.hitPoints)
+		firstPoint = Point.Point(firstHit.getX(), firstHit.getY(), firstHit.getZ(), 1)
+		ecalIntersect = None
+		if((firstPoint - point_plus).getMag() < (firstPoint - point_minus).getMag()):
+			ecalIntersect = point_plus
+		else:
+			ecalIntersect = point_minus
+
+
 
 		#here, find the best rod radius to use
 		rodRadius = 10 	#mm
@@ -493,8 +519,8 @@ class Event:
 			#to the axis line from hp
 			d = ((x0 - x1).cross((x0 - x2))).getMag()/(x2 - x1).getMag()
 			#if this distance is inside the rod radius
-			#and the point is in the calorimeter "1848"mm
-			if(d <= rodRadius and hp.getRho() >= 1848):
+			#and the point is in the calorimeter "1847.4"mm
+			if(d <= rodRadius and hp.getRho() >= 1847.4):
 				passed.append(hp)
 				
 

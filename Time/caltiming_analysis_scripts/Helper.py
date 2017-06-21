@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import Point
 
 
 def resize(fig, ax):
@@ -19,7 +20,7 @@ def FWHM(xVals, yVals):
 		yVals = yVals.tolist()
 
 		maxIndex = yVals.index(max(yVals))
-		peakCount      = yVals[maxIndex]
+		peakCount  = yVals[maxIndex]
 		peakCountx  = xVals[maxIndex]
 
 		for i in range(maxIndex, len(xVals)):
@@ -41,4 +42,30 @@ def FWHM(xVals, yVals):
 		tHalfDown = x0 + (0.5 *peakCount - y0) *(x1-x0)/(y1-y0)
 
 		return tHalfUp-tHalfDown
+
+#get the first hit in a set of hitpoints
+def getFirstHit(hitpoints):
+	tsort = sorted(hitpoints, key=lambda x: x.getT())
+	return tsort[0]
+
+
+#return the two intersection points of an infinite
+#cylinder with a line, assuming the cylinder has 
+#its principle axis as the z axis and "line"
+#is [Point, Point] , i.e. [shift point, vector]
+def getCylinderIntersection(radius, line):
+	#At^2 + Bt + C = 0 from mrl.nyu.edu/~dzorin/rend05/lecture2.pdf
+	cylinderAxis = Point.Point(0,0,1,1) #z axis
+	v = line[1]
+	x = line[0]
+	A = (v - cylinderAxis.scale(v*cylinderAxis))*(v - cylinderAxis.scale(v*cylinderAxis))
+	B = 2*(v - cylinderAxis.scale(v*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis))
+	C = (x - cylinderAxis.scale(x*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis)) - radius**2
+	#two solution from quadratic equation
+	t_plus = (1.0/(2*A))*(-1*B + np.sqrt(B*B - 4*A*C))
+	t_minus = (1.0/(2*A))*(-1*B - np.sqrt(B*B - 4*A*C))
+	point_plus = Point.Point(t_plus*v.getX() + x.getX(), t_plus*v.getY() + x.getY(), t_plus*v.getZ() + x.getZ(), 1)
+	point_minus = Point.Point(t_minus*v.getX() + x.getX(), t_minus*v.getY() + x.getY(), t_minus*v.getZ() + x.getZ(), 1)
+	return (point_plus, point_minus)
+
 
