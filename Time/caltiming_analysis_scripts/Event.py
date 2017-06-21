@@ -540,8 +540,8 @@ class Event:
 				rodDepths.append(D)
 				rodTimes.append(hp.getT())
 				
-		if(len(passed) == 0):
-			print "Rod captured no hits"
+		if(len(passed) <= 2):
+			print "Rod captured too few hits to fit a line"
 			print "Either the rod is too small or the showerAxis is poorly fit"
 			return None
 
@@ -553,19 +553,87 @@ class Event:
 		erod = np.sum([_.getE() for _ in passed])
 		efrac = erod/etot
 
+		#---BEGIN N-hit iteration fitting---#
+		#order the passed hits based on time
+		timebank, depthbank = (list(t) for t in zip(*sorted(zip(rodTimes, rodDepths), key=lambda x: x[0])))
+		tcept = []
+		tcept_av = []
+		tcept_std = []
+		nit = []
+		fitvels = []
+		differentialTCept = []
+		#iterate through the points
+		#and fit at each iteration
+		n = 0
+		while n < (len(timebank) - 2):
+			fittimes = [timebank[i] for i in range(n + 3)]
+			fitdepths = [depthbank[i] for i in range(n + 3)]
 
-		#fit the depth vs time data with a line
-		#that has slope of 1/speed of light. One
-		#parameter fit
-		"""
-		#line with p as the y intercept
-		c = 299.792458
-		fitfunc = lambda p, x: (1.0/c)*x + p[0]
-		errfunc = lambda p, x, y: fitfunc(p, x) - y
-		pguess = [4]	#ns
-		result = least_squares(errfunc, pguess, args=(np.array(rodDepths), np.array(rodTimes)))
-		cept = result.x[0]
-		"""
+			"""
+			#fit these points to a line at fixed slope 1/c
+			c = 299.792458
+			fitfunc = lambda p, x: (1.0/c)*x + p[0]
+			errfunc = lambda p, x, y: fitfunc(p, x) - y
+			pguess = [4]	#ns
+			result = least_squares(errfunc, pguess, args=(np.array(fitdepths), np.array(fittimes)))
+			cept = result.x[0]
+			"""
+
+			#fit these points to a line with floating slope
+			fitfunc = lambda p, x: p[1]*x + p[0]
+			errfunc = lambda p, x, y: fitfunc(p, x) - y
+			pguess = [4, 1.0/299.0]	#ns, ns/mm
+			result = least_squares(errfunc, pguess, args=(np.array(fitdepths), np.array(fittimes)))
+			cept = result.x[0]
+			fitvel = result.x[1]
+
+			#the meat of the algorithm, 
+			#rejecting additional points 
+			#based on a criteria
+			pscut = 0.005
+			if(n > 0):
+				if(abs(cept - tcept[-1]) > pscut):
+					#skip this point by removing
+					#from the bank
+					timebank.remove(fittimes[-1])
+					depthbank.remove(fitdepths[-1])
+					continue
+
+
+
+
+
+			#push the results
+			nit.append(n)
+			tcept.append(cept)
+			tcept_av.append(np.mean(tcept))
+			tcept_std.append(np.std(tcept))
+			fitvels.append(fitvel)
+			if(n > 0):
+				differentialTCept.append(tcept[-1] - tcept[-2])
+
+			n += 1
+
+		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
+		ax1.plot(nit, tcept, 'ro-')
+		ax1.set_xlabel("number of iterations")
+		ax1.set_ylabel("time intercept of fit")
+		ax2.plot(rodDepths, rodTimes, 'ko')
+		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="treco - ttrue = " + str(tcept[-1] - timebank[0]))
+		ax2.legend()
+		ax2.set_xlabel("rod depth (mm)")
+		ax2.set_ylabel("hit time (ns)")
+		ax3.plot(nit[1:], differentialTCept, 'go--')
+		ax3.set_ylabel("cint running average")
+		ax4.plot(nit, tcept_std, 'mo--')
+		ax4.set_ylabel("std running")
+		plt.show()
+
+
+
+
+
+		
 
 		
 

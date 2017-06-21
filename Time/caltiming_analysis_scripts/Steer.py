@@ -20,17 +20,18 @@ if __name__ == "__main__":
 
 
 	#testing of algorithms given a line axis
-	#data.events[14].projectionDisplay()
+	#data.events[12].projectionDisplay()
+	#data.events[5].algo_rodLinearWithDepth()
 
 
 
 	#sys.exit()
 
 	#visualizing display loop
-	for i in range(len(data.events)):
+	while(raw_input("> ") != 'q'):
+		i = np.random.randint(0, len(data.events))
 		print "on " + str(i)
-		smeared = data.smear(0.0, 0)
+		smeared = data.smear(0.01, 0)
 		smeared.events[i].algo_rodLinearWithDepth()
-		if(raw_input(">  ") == 'q'):
-			break
+		
 
