@@ -16,6 +16,12 @@ import Helper
 import Layer
 import Point
 
+
+global ecalRIN 
+
+ecalRIN = 1847.4 #mm
+
+
 class Event:
 	def __init__(self, hitPoints=None, evNum=None):
 		self.hitPoints = hitPoints  #array of hit points corresponding to pixel positions in the ECAL
@@ -49,7 +55,7 @@ class Event:
 	def makeLayersWithRadii(self, width):
 		#make empty layers first
 		layerList = []
-		rad = 1847.3 + width/2.0 	#mm start of ecal + 1 width
+		rad = ecalRIN + width/2.0 	#mm start of ecal + 1 width
 		hcalrad = 3385
 		while (rad < hcalrad):
 			tempLay = Layer.Layer()
@@ -173,7 +179,7 @@ class Event:
 		#radii
 		tpc_rin = 329
 		tpc_rout = 1808
-		ecal_rin = 1847.3
+		ecal_rin = ecalRIN
 		hcal_rin = 2058
 		hcal_rout = 3385.5
 
@@ -361,10 +367,10 @@ class Event:
 	#of an event based on the definition of 
 	#"Z0" from the CALICE paper 2014
 	def getShowerDepth(self):
-		rho_start = 1847.4 #the front face of the e-cal in rho (mm)
+		rho_start = ecalRIN #the front face of the e-cal in rho (mm)
 		timeCutoffLo = 6 # ns
 		timeCutoffHi = 8 # ns 
-		dCutoffLo = 1847.4 # mm
+		dCutoffLo = ecalRIN # mm
 		dCutoffHi = 3385 # mm
 
 		Z0 = 0
@@ -423,6 +429,63 @@ class Event:
 		return trimmedEvent
 
 
+	#does a rod cut on all hit points in the event
+	#given a shower axis. 
+	#Returns: a list of hit points that passed,
+	#a list of depths relative to the ecal Intersection point
+	#and the shower axis, and their times
+	def rodFilter(self, radius, showerAxis):
+		
+		#find the intersection point of this showerAxis with
+		#the cylinder of the e-cal radius. Two points satisfy
+		#equation
+		point_plus, point_minus = Helper.getCylinderIntersection(ecalRIN, showerAxis)
+
+		#Decide which of the solutions is closest
+		#to the cluster of hits
+		firstHit = Helper.getFirstHit(self.hitPoints)
+		firstPoint = Point.Point(firstHit.getX(), firstHit.getY(), firstHit.getZ(), 1)
+		ecalIntersect = None
+		if((firstPoint - point_plus).getMag() < (firstPoint - point_minus).getMag()):
+			ecalIntersect = point_plus
+		else:
+			ecalIntersect = point_minus
+
+
+		#start the rod filtering
+		rodRadius = radius 	#mm
+		passed = []		#hit points that are inside the rod
+		rodDepths = []	#hit depths relative to the shower axis intersection with ecal
+		rodTimes = []	#global hit time but for events that pass rod cut
+
+		#two points on the line
+		x1 = ecalIntersect
+		x2 = x1 - showerAxis[1]
+		for hp in self.hitPoints:
+			x0 = Point.Point(hp.getX(), hp.getY(), hp.getZ(), 1)
+			#find the distance of the perpendicular
+			#to the axis line from hp
+			d = ((x0 - x1).cross((x0 - x2))).getMag()/(x2 - x1).getMag()
+			#if this distance is inside the rod radius
+			#and the point is in the calorimeter "1847.4"mm
+			if(d <= rodRadius and hp.getRho() >= ecalRIN):
+				passed.append(hp)
+				#distance along axis from point x1 to 
+				#the perpendicular intersection of axis
+				#with hit point
+				h = (x1 - x0).getMag()
+				D = np.sqrt(h*h - d*d)
+				#because x1 is the ecal Intersection,
+				#D is the depth from the intersection
+				rodDepths.append(D)
+				rodTimes.append(hp.getT())
+
+
+		return (passed, rodDepths, rodTimes)
+
+
+
+
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm
 	# timeCutoffLo = first hit time accepted by algo, ns
@@ -433,7 +496,7 @@ class Event:
 		layerWidth = 1.0 # mm
 		timeCutoffLo = 5.5 # ns
 		timeCutoffHi = 6.6 # ns 
-		dCutoffLo = 1847.4 # mm
+		dCutoffLo = ecalRIN # mm
 		dCutoffHi = 2050 # mm
 
 		layers = self.makeLayers(layerWidth)
@@ -482,73 +545,29 @@ class Event:
 
 		return tEst, min(tList)
 
-	def algo_rodLinearWithDepth(self):
-
+	def algo_rodLinearWithDepth(self, timesmear):
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
 		if(len(cutEvent.hitPoints) == 0):
-			print "did pass rough cut, adapt the cutting algorithm later"
-			print "you need to be able to make a general rough cut on noise"
+			#print "did pass rough cut, adapt the cutting algorithm later"
+			#print "you need to be able to make a general rough cut on noise"
 			return (None, None)
 
 		#here input the algorithm that finds
-		#the shower axis
+		#the shower axis.
 		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
-		#find the intersection point of this showerAxis with
-		#the cylinder of the e-cal radius. Two points satisfy
-		#equation
-		point_plus, point_minus = Helper.getCylinderIntersection(1847.4, showerAxis)
 
-		#find which point is closest to the earliest
-		#point in the remaining trimmed hit points. This
-		#should always be the correct intersection with the cylinder
-		#because the intersections are on opposite poles. 
-		firstHit = Helper.getFirstHit(cutEvent.hitPoints)
-		firstPoint = Point.Point(firstHit.getX(), firstHit.getY(), firstHit.getZ(), 1)
-		ecalIntersect = None
-		if((firstPoint - point_plus).getMag() < (firstPoint - point_minus).getMag()):
-			ecalIntersect = point_plus
-		else:
-			ecalIntersect = point_minus
+		#cutEvent.projectionDisplay(showerAxis)
+		radius = 15 #mm
+		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
 
-	
-
-		#here, find the best rod radius to use
-		rodRadius = 15 	#mm
-
-
-		passed = []		#hit points that are inside the rod
-		rodDepths = []	#hit depths relative to the shower axis intersection with ecal
-		rodTimes = []	#global hit time but for events that pass rod cut
-
-		#two points on the line
-		x1 = ecalIntersect
-		x2 = x1 - showerAxis[1]
-		for hp in cutEvent.hitPoints:
-			x0 = Point.Point(hp.getX(), hp.getY(), hp.getZ(), 1)
-			#find the distance of the perpendicular
-			#to the axis line from hp
-			d = ((x0 - x1).cross((x0 - x2))).getMag()/(x2 - x1).getMag()
-			#if this distance is inside the rod radius
-			#and the point is in the calorimeter "1847.4"mm
-			if(d <= rodRadius and hp.getRho() >= 1847.4):
-				passed.append(hp)
-				#distance along axis from point x1 to 
-				#the perpendicular intersection of axis
-				#with hit point
-				h = (x1 - x0).getMag()
-				D = np.sqrt(h*h - d*d)
-				#because x1 is the ecal Intersection,
-				#D is the depth from the intersection
-				rodDepths.append(D)
-				rodTimes.append(hp.getT())
 				
-		if(len(passed) <= 2):
-			print "Rod captured too few hits to fit a line"
-			print "Either the rod is too small or the showerAxis is poorly fit"
+		if(len(passed) <= 5):
 			return (None, None)
 
+		rodEvent = Event(passed, 0)
+		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
 
 		#calculate fraction of total energy
 		#contained in the rod--uses trimmed event so
@@ -556,6 +575,7 @@ class Event:
 		etot = np.sum([_.getE() for _ in cutEvent.hitPoints])
 		erod = np.sum([_.getE() for _ in passed])
 		efrac = erod/etot
+
 
 		#---BEGIN N-hit iteration fitting---#
 		#order the passed hits based on time
@@ -566,6 +586,7 @@ class Event:
 		nit = []
 		fitvels = []
 		differentialTCept = []
+		costs = []
 
 		#delete this
 		ddd = []
@@ -577,16 +598,6 @@ class Event:
 		while n < (len(timebank) - 2):
 			fittimes = [timebank[i] for i in range(n + 3)]
 			fitdepths = [depthbank[i] for i in range(n + 3)]
-
-			"""
-			#fit these points to a line at fixed slope 1/c
-			c = 299.792458
-			fitfunc = lambda p, x: (1.0/c)*x + p[0]
-			errfunc = lambda p, x, y: fitfunc(p, x) - y
-			pguess = [4]	#ns
-			result = least_squares(errfunc, pguess, args=(np.array(fitdepths), np.array(fittimes)))
-			cept = result.x[0]
-			"""
 
 			#fit these points to a line with floating slope
 			fitfunc = lambda p, x: p[1]*x + p[0]
@@ -600,7 +611,10 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				pscut = 0.020/np.sqrt(n)
+				if(timesmear == 0):
+					pscut = 1.5*0.01/np.sqrt(n)
+				else:
+					pscut = 1.5*timesmear/np.sqrt(n)
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
@@ -609,24 +623,41 @@ class Event:
 					continue
 
 
-
-
-
 			#push the results
 			nit.append(n)
 			tcept.append(cept)
 			tcept_av.append(np.mean(tcept))
 			tcept_std.append(np.std(tcept))
 			fitvels.append(fitvel)
+			costs.append(result.cost)
 			if(n > 0):
 				differentialTCept.append(tcept[-1] - tcept[-2])
 
 			n += 1
 
+
+		#----------------------#
+
+		#---Final outlier cuts---#
+
+		#if you haven't used at least 6
+		#points to do the fit
+		if(len(nit) < 4):
+			return (None, None)
+
+		#calculate chi^2, pearsons test
+		if(costs[-1] > 0.01):
+			return (None, None)
+
+
+
+
+
+		#-----------------------#
+
+		#ttrue = 6.590 #ns for 1GeV charged kaon
+
 		"""
-		ttrue = 6.872 #ns for 1GeV charged kaon
-
-
 		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
 		ax1.plot(nit, tcept, 'ro-')
 		ax1.set_xlabel("number of iterations")
@@ -642,7 +673,14 @@ class Event:
 		ax4.plot(nit, tcept_std, 'mo--')
 		ax4.set_ylabel("std running")
 		plt.show()
+
+		
+		if(tcept[-1] > 6.25):
+			print "**" + str(self.evNum)
+
+		print self.evNum
 		"""
+
 		return (tcept[-1], 0)
 
 

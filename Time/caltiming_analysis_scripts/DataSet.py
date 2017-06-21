@@ -100,7 +100,7 @@ class DataSet:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
 			elif algo == 1:
-				tEst, tTru = event.algo_rodLinearWithDepth()
+				tEst, tTru = event.algo_rodLinearWithDepth(self.tSmear)
 				if(tEst is None or tTru is None):
 					continue
 			else:
@@ -111,6 +111,7 @@ class DataSet:
 			tDiffList.append(tEst-tTru)
 		print "Done."
 		sys.stdout.flush()
+
 
 
 		tDiffCounts, tDiffBins = np.histogram(tDiffList, 50)
@@ -127,6 +128,7 @@ class DataSet:
 		print "Standard Deviation:", round(1000*tStd, 4), "ps"
 		print "Skewness:          ", round(tSkewness, 4) 
 		print "Skewtest z-score:  ", round(tSkewTest, 4)
+		print "Efficiency: ", round(len(tEstList)/float(len(self.events)), 4)
 
 		if plotting:
 			fig, ax = plt.subplots(figsize=(10, 7))
