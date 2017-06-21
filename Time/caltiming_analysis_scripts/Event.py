@@ -11,6 +11,7 @@ import DataSet
 import HitPoint
 import Helper
 import Layer
+import Point
 
 class Event:
 	def __init__(self, hitPoints=None, evNum=None):
@@ -147,7 +148,6 @@ class Event:
 		scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 		fig, (ax1, ax2) = plt.subplots(ncols=2, nrows=1, figsize=(13, 6))
 
-
 		ax1.scatter(x, y, c=scalarMap.to_rgba(t))
 		ax1.set_xlim([-1000, 1000])
 		ax1.set_ylim([1800, 2100])
@@ -163,8 +163,20 @@ class Event:
 		ax2.set_ylabel("y-projected axis")
 		ax2.plot([-1000, 1000], [2058, 2058], 'k-')
 
-
 		scalarMap.set_array(t)
+
+		axPoints = self.getShowerAxis()
+		print axPoints[0]
+		print axPoints[1]
+		point1 = axPoints[0] - axPoints[1].scale(1e5)
+		point2 = axPoints[0] + axPoints[1].scale(1e5)
+		x = [point1.getX(), point2.getX()]
+		y = [point1.getY(), point2.getY()]
+		z = [point1.getZ(), point2.getZ()]
+		print x, y, z
+		ax1.plot(x, y, 'r')
+		ax2.plot(z, y, 'r')
+		
 		plt.show()
 
 
@@ -304,9 +316,12 @@ class Event:
 
 		return Z0
 
-	# Returns (x, y, z), a 
-	def getShowerAxis(self):
-
+	# Returns [Point(x0, y0, z0), Point(vx, vy, vz)]
+	def getShowerAxis(self, w0 = 5):
+		points = []
+		for hitPoint in self.hitPoints:
+			points.append([hitPoint.getX(), hitPoint.getY(), hitPoint.getZ(), hitPoint.getE()])
+		return Helper.LinFit3D(points, w0)
 
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm

@@ -1,6 +1,9 @@
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
+import scipy.optimize as opt
+import Point
 
 
 def resize(fig, ax):
@@ -42,3 +45,41 @@ def FWHM(xVals, yVals):
 
 		return tHalfUp-tHalfDown
 
+
+# LineParams = [x0, y0, z0, theta, phi] <= 5 params of line in 3D
+# Params = [w0, [[x1, y1, z1, E1], [x2, y2, z2, E2], ... [xN, yN, zN, EN]]] list of all points to fit to
+# w0 = weight function parameter
+def LinChiSq3DWeighted(LineParams, Params):
+	x1 = np.array(LineParams[:3])
+	theta = LineParams[3]
+	phi = LineParams[4]
+
+	w0 = Params[0]
+	points = Params[1]
+
+	x2 = x1 + np.array([np.cos(phi)*np.sin(theta), np.sin(phi)*np.sin(theta), np.cos(theta)])
+	Etot = np.sum(points, axis=0)[3]
+
+	D = 0
+	for p in points:
+		w = w0 + np.log(p[3]/Etot)
+		if w < 0: 
+			continue
+		x0 = np.array(p[:3])
+		d = np.linalg.norm(np.cross(x0-x1, x0-x2))
+		D += (d*w)**2
+	return D
+
+# points = [[x1, y1, z1, E1], [x2, y2, z2, E2], ... [xN, yN, zN, EN]]
+# w0 = Energy weighting function parameter
+# Returns a list of two points: [LinePoint, LineVector]
+def LinFit3D(points, w0):
+	points = np.array(points)
+	x0, y0, z0, E0 = points[0]
+	theta = np.pi/2.0
+	phi = np.pi/2.0
+	output = opt.minimize(LinChiSq3DWeighted, [x0, y0, z0, theta, phi], args = [w0, points], bounds = [[None, None], [None, None], [None, None], [0, np.pi], [0, 2*np.pi]])
+	x0fit, y0fit, z0fit, thetafit, phifit = output.x
+	mxfit, myfit, mzfit = np.cos(phifit)*np.sin(thetafit), np.sin(phifit)*np.sin(thetafit), np.cos(thetafit)
+	
+	return [Point.Point(x0fit, y0fit, z0fit, None), Point.Point(mxfit, myfit, mzfit, None)]

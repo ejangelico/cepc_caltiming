@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/pions/noB/200Gev_20evts.p", 'rb'))
+	data = pickle.load(open("../pickles/pions/noB/5GeV_100.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
@@ -23,6 +23,9 @@ if __name__ == "__main__":
 	#smdata = data.smear(0.01, 0)
 	#data.timeReco(0, False)
 	#data.timeRecoSmearing(np.linspace(0, 0.5, 30))
+
+	data.events[10].projectionDisplay()
+	sys.exit()
 
 	layerWidth = 10	#mm
 	layers = data.events[10].makeLayersWithRadii(layerWidth)
