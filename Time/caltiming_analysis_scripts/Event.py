@@ -490,7 +490,7 @@ class Event:
 		if(len(cutEvent.hitPoints) == 0):
 			print "did pass rough cut, adapt the cutting algorithm later"
 			print "you need to be able to make a general rough cut on noise"
-			return
+			return (None, None)
 
 		#here input the algorithm that finds
 		#the shower axis
@@ -547,7 +547,7 @@ class Event:
 		if(len(passed) <= 2):
 			print "Rod captured too few hits to fit a line"
 			print "Either the rod is too small or the showerAxis is poorly fit"
-			return None
+			return (None, None)
 
 
 		#calculate fraction of total energy
@@ -566,6 +566,11 @@ class Event:
 		nit = []
 		fitvels = []
 		differentialTCept = []
+
+		#delete this
+		ddd = []
+		ttt = []
+
 		#iterate through the points
 		#and fit at each iteration
 		n = 0
@@ -594,8 +599,8 @@ class Event:
 			#the meat of the algorithm, 
 			#rejecting additional points 
 			#based on a criteria
-			pscut = 0.005
 			if(n > 0):
+				pscut = 0.020/np.sqrt(n)
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
@@ -618,12 +623,17 @@ class Event:
 
 			n += 1
 
+		"""
+		ttrue = 6.872 #ns for 1GeV charged kaon
+
+
 		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
 		ax1.plot(nit, tcept, 'ro-')
 		ax1.set_xlabel("number of iterations")
 		ax1.set_ylabel("time intercept of fit")
 		ax2.plot(rodDepths, rodTimes, 'ko')
-		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="treco - ttrue = " + str(tcept[-1] - timebank[0]))
+		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="treco - ttrue = ")
+		ax2.plot(depthbank, timebank, 'ro')
 		ax2.legend()
 		ax2.set_xlabel("rod depth (mm)")
 		ax2.set_ylabel("hit time (ns)")
@@ -632,6 +642,8 @@ class Event:
 		ax4.plot(nit, tcept_std, 'mo--')
 		ax4.set_ylabel("std running")
 		plt.show()
+		"""
+		return (tcept[-1], 0)
 
 
 

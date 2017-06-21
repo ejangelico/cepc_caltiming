@@ -99,6 +99,10 @@ class DataSet:
 		for event in self.events:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			elif algo == 1:
+				tEst, tTru = event.algo_rodLinearWithDepth()
+				if(tEst is None or tTru is None):
+					continue
 			else:
 				print "Please specify the time reconstruction algorithm"
 				sys.exit()
@@ -107,6 +111,7 @@ class DataSet:
 			tDiffList.append(tEst-tTru)
 		print "Done."
 		sys.stdout.flush()
+
 
 		tDiffCounts, tDiffBins = np.histogram(tDiffList, 50)
 		tAv = np.average(tDiffList)
@@ -124,7 +129,7 @@ class DataSet:
 		print "Skewtest z-score:  ", round(tSkewTest, 4)
 
 		if plotting:
-			fig, ax = plt.subplots(figsize=(25, 13))
+			fig, ax = plt.subplots(figsize=(10, 7))
 			ax.set_title("10 GeV e-, 10ps pixel resolution", fontsize=23)
 			Helper.resize(fig, ax)
 			tDiffBins = [x*1000 for x in tDiffBins]
@@ -132,8 +137,8 @@ class DataSet:
 			ax.set_xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
 			ax.set_ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
 			
-			#plt.show()
-			plt.savefig("../../../midterm_report/720plots/timereco_10Gev_10ps.png", bbox_inches='tight')
+			plt.show()
+			#plt.savefig("../../../midterm_report/720plots/timereco_10Gev_10ps.png", bbox_inches='tight')
 
 		return [tAv, tMed, tFWHM, tStd, tSkewness, tSkewTest]
 

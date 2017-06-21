@@ -14,18 +14,20 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/pions/noB/5GeV_100.p", 'rb'))
+	data = pickle.load(open("../../../data/pickles/pions/noB/AnaHit_Simu_pi-_10GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
 
 	#testing of algorithms given a line axis
 	#data.events[12].projectionDisplay()
-	#data.events[5].algo_rodLinearWithDepth()
+	#data.events[628].algo_rodLinearWithDepth()
+	#smeardata = data.smear(0.01, 0)
+	#smeardata.timeReco(algo=1, plotting=True)
 
 
 
-	#sys.exit()
+	sys.exit()
 
 	#visualizing display loop
 	while(raw_input("> ") != 'q'):
