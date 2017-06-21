@@ -7,6 +7,7 @@ import sys
 import cPickle as pickle 
 import Event
 import DataSet
+import HitPoint
 
 #USAGE:
 #python rootConverter.py <root file paths>

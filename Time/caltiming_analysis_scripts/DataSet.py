@@ -6,36 +6,6 @@ import numpy as np
 import scipy.stats
 import Helper
 
-# Given x-values and y-values of a curve with one peak, computes the full width at half max, in units of x
-def FWHM(xVals, yVals):
-		xVals = xVals.tolist()
-		yVals = yVals.tolist()
-
-		maxIndex = yVals.index(max(yVals))
-		peakCount      = yVals[maxIndex]
-		peakCountx  = xVals[maxIndex]
-
-		for i in range(maxIndex, len(xVals)):
-			if yVals[i] < peakCount/2.0:
-				break
-		x0 = xVals[i-1]
-		y0 = yVals[i-1]
-		x1 = xVals[i]
-		y1 = yVals[i]
-		tHalfUp = x0 + (0.5 *peakCount - y0) *(x1-x0)/(y1-y0)
-
-		for i in range(0, maxIndex):
-			if yVals[i] > peakCount/2.0:
-				break
-		x0 = xVals[i-1]
-		y0 = yVals[i-1]
-		x1 = xVals[i]
-		y1 = yVals[i]
-		tHalfDown = x0 + (0.5 *peakCount - y0) *(x1-x0)/(y1-y0)
-
-		return tHalfUp-tHalfDown
-
-
 class DataSet:
 	def __init__(self, events = None, tSmear = None, eSmear = None):
 		self.events = events
@@ -56,9 +26,10 @@ class DataSet:
 		
 		binCenters = self.events[0].timeHist(numBins)[1]	
 
-		plt.bar(binCenters, timeHist, width = binCenters[1]-binCenters[0], color = 'blue')
-		plt.xlabel("Time (nanoseconds)")
-		plt.ylabel("Total shower energy/bin (GeV/ns)")
+		fig, ax = plt.subplots()
+		ax.bar(binCenters, timeHist, width = binCenters[1]-binCenters[0], color = 'blue')
+		ax.set_xlabel("Time (nanoseconds)")
+		ax.set_ylabel("Total shower energy/bin (GeV/ns)")
 		plt.show()
 
 	# Plots the depth (radius) vs time of every hit point
@@ -70,9 +41,10 @@ class DataSet:
 			d += d0
 			t += t0
 
-		plt.plot(d, t, 'k.')
-		plt.xlabel("Depth into Cal. (mm)")
-		plt.ylabel("Time of Hit (ns)")
+		fig, ax = plt.subplots()
+		ax.plot(d, t, 'k.')
+		ax.set_xlabel("Depth into Cal. (mm)")
+		ax.set_ylabel("Time of Hit (ns)")
 		plt.show()
 
 	# Makes a new dataset with smeared time/energy
@@ -138,7 +110,7 @@ class DataSet:
 
 		tDiffCounts, tDiffBins = np.histogram(tDiffList, 50)
 		tAv = np.average(tDiffList)
-		tFWHM = FWHM(tDiffBins, tDiffCounts)
+		tFWHM = Helper.FWHM(tDiffBins, tDiffCounts)
 		tStd = np.std(tDiffList)
 		tMed = np.median(tDiffList)
 		tSkewness = scipy.stats.skew(tDiffList)
@@ -152,11 +124,16 @@ class DataSet:
 		print "Skewtest z-score:  ", round(tSkewTest, 4)
 
 		if plotting:
+			fig, ax = plt.subplots(figsize=(25, 13))
+			ax.set_title("10 GeV e-, 10ps pixel resolution", fontsize=23)
+			Helper.resize(fig, ax)
 			tDiffBins = [x*1000 for x in tDiffBins]
-			plt.bar(tDiffBins[:-1], tDiffCounts, width = tDiffBins[1]-tDiffBins[0], color = 'b')
-			plt.xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
-			plt.ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
-			plt.show()
+			ax.bar(tDiffBins[:-1], tDiffCounts, width = tDiffBins[1]-tDiffBins[0], color = 'b')
+			ax.set_xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
+			ax.set_ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)
+			
+			#plt.show()
+			plt.savefig("../../../midterm_report/720plots/timereco_10Gev_10ps.png", bbox_inches='tight')
 
 		return [tAv, tMed, tFWHM, tStd, tSkewness, tSkewTest]
 
@@ -177,20 +154,27 @@ class DataSet:
 			StdList.append(1000*recoStats[3])
 
 		if plotting:
+			fig, ax = plt.subplots(figsize=(25, 13))
+			Helper.resize(fig, ax)
 			smearTimeList = [1000*x for x in smearTimeList]
-			plt.plot(smearTimeList, AvList, 'k')
-			plt.plot(smearTimeList, MedList, 'r')
-			plt.ylabel("Difference from Truth (ps)")
-			plt.xlabel("Smear Time (ps)")
-			plt.legend(["Mean", "Median"])
-			plt.show()
+			ax.plot(smearTimeList, AvList, 'b', linewidth=3)
+			ax.plot(smearTimeList, MedList, 'r', linewidth=3)
+			ax.set_ylabel("Difference from Truth (ps)")
+			ax.set_xlabel("Pixel Smear Time (ps)")
+			ax.grid(True)
+			ax.legend(["Mean", "Median"], fontsize=30)
+			plt.savefig("../../../midterm_report/720plots/manypoints_means.png", bbox_inches='tight')
+			p
 
-			plt.plot(smearTimeList, FWHMList, 'k')
-			plt.plot(smearTimeList, StdList, 'r')
-			plt.ylabel("Uncertainty on Reconstructed Time (ps)")
-			plt.xlabel("Pixel Smear Time (ps)")
-			plt.legend(["FWHM", "Std. Dev."])
-			plt.show()
-		
+			fig, ax = plt.subplots(figsize=(25, 13))
+			Helper.resize(fig, ax)
+			ax.plot(smearTimeList, FWHMList, 'b', linewidth=3)
+			ax.plot(smearTimeList, StdList, 'r', linewidth=3)
+			ax.set_ylabel("Uncertainty on Reconstructed Time (ps)")
+			ax.set_xlabel("Pixel Smear Time (ps)")
+			ax.legend(["FWHM", "Std. Dev."], fontsize=30)
+			ax.grid(True)
+			plt.savefig("../../../midterm_report/720plots/manypoints_stds.png", bbox_inches='tight')
+
 		StdList = [x/1000 for x in StdList]
 		return StdList
