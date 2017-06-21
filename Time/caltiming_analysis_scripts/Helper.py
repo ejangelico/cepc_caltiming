@@ -6,6 +6,7 @@ import scipy.optimize as opt
 import Point
 
 
+
 def resize(fig, ax):
 	ax.yaxis.label.set_size(21)
 	ax.xaxis.label.set_size(21)
@@ -22,7 +23,7 @@ def FWHM(xVals, yVals):
 		yVals = yVals.tolist()
 
 		maxIndex = yVals.index(max(yVals))
-		peakCount      = yVals[maxIndex]
+		peakCount  = yVals[maxIndex]
 		peakCountx  = xVals[maxIndex]
 
 		for i in range(maxIndex, len(xVals)):
@@ -83,3 +84,32 @@ def LinFit3D(points, w0):
 	mxfit, myfit, mzfit = np.cos(phifit)*np.sin(thetafit), np.sin(phifit)*np.sin(thetafit), np.cos(thetafit)
 	
 	return [Point.Point(x0fit, y0fit, z0fit, None), Point.Point(mxfit, myfit, mzfit, None)]
+
+
+#get the first hit in a set of hitpoints
+def getFirstHit(hitpoints):
+	tsort = sorted(hitpoints, key=lambda x: x.getT())
+	return tsort[0]
+
+
+#return the two intersection points of an infinite
+#cylinder with a line, assuming the cylinder has 
+#its principle axis as the z axis and "line"
+#is [Point, Point] , i.e. [shift point, vector]
+def getCylinderIntersection(radius, line):
+	#At^2 + Bt + C = 0 from mrl.nyu.edu/~dzorin/rend05/lecture2.pdf
+	cylinderAxis = Point.Point(0,0,1,1) #z axis
+	v = line[1]
+	x = line[0]
+	A = (v - cylinderAxis.scale(v*cylinderAxis))*(v - cylinderAxis.scale(v*cylinderAxis))
+	B = (v - cylinderAxis.scale(v*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis))
+	B = 2*B
+	C = (x - cylinderAxis.scale(x*cylinderAxis))*(x - cylinderAxis.scale(x*cylinderAxis)) - radius**2
+	#two solution from quadratic equation
+	t_plus = (1.0/(2*A))*(-1*B + np.sqrt(B*B - 4*A*C))
+	t_minus = (1.0/(2*A))*(-1*B - np.sqrt(B*B - 4*A*C))
+	point_plus = Point.Point(t_plus*v.getX() + x.getX(), t_plus*v.getY() + x.getY(), t_plus*v.getZ() + x.getZ(), 1)
+	point_minus = Point.Point(t_minus*v.getX() + x.getX(), t_minus*v.getY() + x.getY(), t_minus*v.getZ() + x.getZ(), 1)
+	return (point_plus, point_minus)
+
+
