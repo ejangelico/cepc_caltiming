@@ -7,16 +7,18 @@ import scipy.stats
 import Helper
 
 class DataSet:
-	def __init__(self, events = None, tSmear = None, eSmear = None):
+	def __init__(self, events = None, tSmear = None, eSmear = None, pMomentum=None):
 		self.events = events
-
 		self.tSmear = tSmear 	#smear 1sigma in ns
 
 		#fractional energy resolution
 		#takes values between [0.0, 1.0]
 		self.eSmear = eSmear
-
+		self.pMomentum = pMomentum #momentum of the generated particle in the data set in GeV
 		self.layerBins = None
+
+	def setMomentum(self, p):
+		self.pMomentum = p #in GeV
 
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
