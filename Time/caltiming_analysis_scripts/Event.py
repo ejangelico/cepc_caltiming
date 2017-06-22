@@ -609,10 +609,7 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				if(timesmear is None or timesmear == 0):
-					pscut = 1.5*0.01/np.sqrt(n)
-				else:
-					pscut = 1.5*timesmear/np.sqrt(n)
+				pscut = 0.7/np.sqrt(n)
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
