@@ -443,21 +443,6 @@ class Event:
 	#a list of depths relative to the ecal Intersection point
 	#and the shower axis, and their times
 	def rodFilter(self, radius, showerAxis):
-		
-		#find the intersection point of this showerAxis with
-		#the cylinder of the e-cal radius. Two points satisfy
-		#equation
-		point_plus, point_minus = Helper.getCylinderIntersection(ecalRIN, showerAxis)
-
-		#Decide which of the solutions is closest
-		#to the cluster of hits
-		firstHit = Helper.getFirstHit(self.hitPoints)
-		firstPoint = Point.Point(firstHit.getX(), firstHit.getY(), firstHit.getZ(), 1)
-		ecalIntersect = None
-		if((firstPoint - point_plus).getMag() < (firstPoint - point_minus).getMag()):
-			ecalIntersect = point_plus
-		else:
-			ecalIntersect = point_minus
 
 
 		#start the rod filtering
@@ -467,7 +452,7 @@ class Event:
 		rodTimes = []	#global hit time but for events that pass rod cut
 
 		#two points on the line
-		x1 = ecalIntersect
+		x1 = showerAxis[0] 	#intersection point with e-cal
 		x2 = x1 - showerAxis[1]
 		for hp in self.hitPoints:
 			x0 = Point.Point(hp.getX(), hp.getY(), hp.getZ(), 1)
