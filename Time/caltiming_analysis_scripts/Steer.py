@@ -18,6 +18,21 @@ if __name__ == "__main__":
 	print "Done."
 	sys.stdout.flush()
 
+	event = data.events[11].hadronicNoiseCut()
+	dotArray = []
+	yhat = Point.Point(0, 1, 0, cart = True)
+	w0List = np.linspace(0.5, 100, 1000)
+	for w0 in w0List:
+		print round(w0, 4)
+		ShowerAx = event.getShowerAxisWeighted(w0)
+		dotArray.append(yhat*ShowerAx[1])
+	#event.projectionDisplay(line = ShowerAx)
+	plt.plot(w0List, dotArray, 'k')
+	plt.xlabel("w0")
+	plt.ylabel("Dot product from y-axis")
+	plt.show()
+
+	sys.exit()
 
 	#testing of algorithms given a line axis
 	#data.events[12].projectionDisplay()

@@ -18,6 +18,9 @@ class DataSet:
 
 		self.layerBins = None
 
+	def getAxis(self):
+		pass
+
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
 		timeHist = [0 for _ in range(numBins)]

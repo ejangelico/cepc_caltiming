@@ -195,7 +195,7 @@ class Event:
 			x.append(hit.getX())
 			y.append(hit.getY())
 			z.append(hit.getZ())
-			t.append(hit.getT())
+			t.append(hit.getE())
 		
 		cm = plt.get_cmap('jet')
 		cNorm = matplotlib.colors.Normalize(vmin=min(t), vmax=min(t)+6)
@@ -385,11 +385,17 @@ class Event:
 
 
 	# Returns [Point(x0, y0, z0), Point(vx, vy, vz)]
-	def getShowerAxis(self, w0 = 5):
+	def getShowerAxis(self):
+		points = []
+		for hitPoint in self.hitPoints:
+			points.append([hitPoint.getX(), hitPoint.getY(), hitPoint.getZ()])
+		return Helper.LinFit3D(points)
+	# Returns [Point(x0, y0, z0), Point(vx, vy, vz)]
+	def getShowerAxisWeighted(self, w0 = 2):
 		points = []
 		for hitPoint in self.hitPoints:
 			points.append([hitPoint.getX(), hitPoint.getY(), hitPoint.getZ(), hitPoint.getE()])
-		return Helper.LinFit3D(points, w0)
+		return Helper.LinFit3DWeighted(points, w0)
 
 	#this is the first pass cut for a general
 	#hadronic shower in the e-cal. It trims noise

@@ -46,6 +46,38 @@ def FWHM(xVals, yVals):
 
 		return tHalfUp-tHalfDown
 
+# LineParams = [x0, y0, z0, theta, phi] <= 5 params of line in 3D
+# Params = [w0, [[x1, y1, z1, E1], [x2, y2, z2, E2], ... [xN, yN, zN, EN]]] list of all points to fit to
+# w0 = weight function parameter
+def LinChiSq3D(LineParams, points):
+	x1 = np.array(LineParams[:3])
+	theta = LineParams[3]
+	phi = LineParams[4]
+
+	x2 = x1 + np.array([np.cos(phi)*np.sin(theta), np.sin(phi)*np.sin(theta), np.cos(theta)])
+	D = 0
+	for p in points:
+		x0 = np.array(p[:3])
+		D += (np.linalg.norm(np.cross(x0-x1, x0-x2)))**2
+	return D
+
+# points = [[x1, y1, z1], [x2, y2, z2], ... [xN, yN, zN]]
+# w0 = Energy weighting function parameter
+# Returns a list of two points: [LinePoint, LineVector]
+def LinFit3D(points):
+	points = np.array(points)
+	x0, y0, z0 = points[0]
+	theta = np.arccos(z0/np.sqrt(x0**2+y0**2+z0**2))
+	phi = np.arctan(y0/x0)
+	print theta
+	print phi
+	output = opt.minimize(LinChiSq3D, [x0, y0, z0, theta, phi], args = points, bounds = [[None, None], [None, None], [None, None], [0, np.pi], [0, 2*np.pi]])
+	x0fit, y0fit, z0fit, thetafit, phifit = output.x
+	mxfit, myfit, mzfit = np.cos(phifit)*np.sin(thetafit), np.sin(phifit)*np.sin(thetafit), np.cos(thetafit)
+	
+	print x0fit, y0fit, z0fit, thetafit, phifit
+	
+	return [Point.Point(x0fit, y0fit, z0fit, cart = True), Point.Point(mxfit, myfit, mzfit, cart = True)]
 
 # LineParams = [x0, y0, z0, theta, phi] <= 5 params of line in 3D
 # Params = [w0, [[x1, y1, z1, E1], [x2, y2, z2, E2], ... [xN, yN, zN, EN]]] list of all points to fit to
@@ -74,16 +106,16 @@ def LinChiSq3DWeighted(LineParams, Params):
 # points = [[x1, y1, z1, E1], [x2, y2, z2, E2], ... [xN, yN, zN, EN]]
 # w0 = Energy weighting function parameter
 # Returns a list of two points: [LinePoint, LineVector]
-def LinFit3D(points, w0):
+def LinFit3DWeighted(points, w0):
 	points = np.array(points)
 	x0, y0, z0, E0 = points[0]
-	theta = np.pi/2.0
-	phi = np.pi/2.0
+	theta = np.arccos(z0/np.sqrt(x0**2+y0**2+z0**2))
+	phi = np.arctan(y0/x0)
 	output = opt.minimize(LinChiSq3DWeighted, [x0, y0, z0, theta, phi], args = [w0, points], bounds = [[None, None], [None, None], [None, None], [0, np.pi], [0, 2*np.pi]])
 	x0fit, y0fit, z0fit, thetafit, phifit = output.x
 	mxfit, myfit, mzfit = np.cos(phifit)*np.sin(thetafit), np.sin(phifit)*np.sin(thetafit), np.cos(thetafit)
 	
-	return [Point.Point(x0fit, y0fit, z0fit, None), Point.Point(mxfit, myfit, mzfit, None)]
+	return [Point.Point(x0fit, y0fit, z0fit, cart = True), Point.Point(mxfit, myfit, mzfit, cart = True)]
 
 
 #get the first hit in a set of hitpoints
