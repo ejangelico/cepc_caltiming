@@ -7,7 +7,7 @@ import scipy.stats
 import Helper
 
 class DataSet:
-	def __init__(self, events = None, tSmear = None, eSmear = None, pMomentum=None):
+	def __init__(self, events = None, tSmear = 0, eSmear = 0, pMomentum=None):
 		self.events = events
 		self.tSmear = tSmear 	#smear 1sigma in ns
 
@@ -19,6 +19,9 @@ class DataSet:
 
 	def setMomentum(self, p):
 		self.pMomentum = p #in GeV
+
+	def getMomentum(self):
+		return self.pMomentum
 
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
@@ -89,6 +92,60 @@ class DataSet:
 		ax.set_xlabel("Longitudinal shower depth (lambda_i)")
 		plt.show()
 
+
+	def testSnake(self, algo=1):
+		tEstList = []
+		print "Reconstructing time for each event...",
+		sys.stdout.flush()
+		failCases = []
+		for event in self.events:
+			if algo == 0:
+				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			elif algo == 1:
+				tEst, tTru = event.algo_Snake(self.tSmear)
+				if(tEst is None and tTru is None):
+					continue
+				elif(tEst is None and tTru > 0):
+					failCases.append(tTru)
+
+			else:
+				print "Please specify the time reconstruction algorithm"
+				sys.exit()
+			tEstList.append(tEst)
+		print "Done."
+		sys.stdout.flush()
+
+		fig, ax = plt.subplots()
+		ax.hist(failCases)
+		plt.show()
+
+
+	#almost identical to "timeReco()" but 
+	#has less meat and just returns a list of 
+	#reconstructed arrival times and the efficiency
+	def listReconstructedTimes(self, algo=0):
+		tEstList = []
+		print "Reconstructing time for each event...",
+		sys.stdout.flush()
+		for event in self.events:
+			if algo == 0:
+				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			elif algo == 1:
+				tEst, tTru = event.algo_Snake(self.tSmear)
+				if(tEst is None or tTru is None):
+					continue
+			else:
+				print "Please specify the time reconstruction algorithm"
+				sys.exit()
+			tEstList.append(tEst)
+		print "Done."
+		sys.stdout.flush()
+
+		efficiency = float(len(tEstList))/float(len(self.events))
+
+		return (tEstList, efficiency)
+
+
 	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
@@ -135,6 +192,7 @@ class DataSet:
 			ax.set_title("10 GeV e-, 10ps pixel resolution", fontsize=23)
 			Helper.resize(fig, ax)
 			tDiffBins = [x*1000 for x in tDiffBins]
+			ax.plot([tAv*1000, tAv*1000], [0, 200], 'r', linewidth=4)
 			ax.bar(tDiffBins[:-1], tDiffCounts, width = tDiffBins[1]-tDiffBins[0], color = 'b')
 			ax.set_xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
 			ax.set_ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)

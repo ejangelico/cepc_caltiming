@@ -548,10 +548,10 @@ class Event:
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
-		if(len(cutEvent.hitPoints) == 0):
+		if(len(cutEvent.hitPoints) <= 5):
 			#print "did pass rough cut, adapt the cutting algorithm later"
 			#print "you need to be able to make a general rough cut on noise"
-			return (None, None)
+			return (None, 1)
 
 		#here input the algorithm that finds
 		#the shower axis.
@@ -561,9 +561,8 @@ class Event:
 		radius = 15 #mm
 		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
 
-				
 		if(len(passed) <= 5):
-			return (None, None)
+			return (None, 2)
 
 		rodEvent = Event(passed, 0)
 		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
@@ -610,7 +609,7 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				if(timesmear == 0):
+				if(timesmear is None or timesmear == 0):
 					pscut = 1.5*0.01/np.sqrt(n)
 				else:
 					pscut = 1.5*timesmear/np.sqrt(n)
@@ -642,14 +641,7 @@ class Event:
 		#if you haven't used at least 6
 		#points to do the fit
 		if(len(nit) < 4):
-			return (None, None)
-
-		#calculate chi^2, pearsons test
-		if(costs[-1] > 0.01):
-			return (None, None)
-
-
-
+			return (None, 3)
 
 
 		#-----------------------#
