@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 import Helper
+import Point
+import Octagon
 
 class DataSet:
 	def __init__(self, events = None, tSmear = None, eSmear = None, pMomentum=None):
@@ -17,11 +19,44 @@ class DataSet:
 		self.pMomentum = pMomentum #momentum of the generated particle in the data set in GeV
 		self.layerBins = None
 
-	def getAxis(self):
-		pass
+	# Returns [Point(x0, y0, z0), Point(vx, vy, vz)]
+	def getAxis(self, isB = True, B = 3.5, R = 1847.4):
+		try:
+			self.pMomentum
+		except:
+			print "Must set momentum."
+			sys.exit()
+		if self.pMomentum is None:
+			print "Must set momentum."
+			sys.exit()
+
+		# Compute the line parameters where the curve intersects the calorimeter
+		if isB:
+			Oct = Octagon.Octagon(R)
+			rho = 3336.0 * self.pMomentum/float(B) 
+			intersect = Oct.circleIntersect(rho)
+			if intersect is None:
+				return None
+			x0 = intersect[0]
+			y0 = intersect[1]
+			m = -(x0 + rho)/y0
+			xhat = -1/np.sqrt(m**2+1)
+			yhat = m*xhat
+
+			z0 = 0
+			zhat = 0
+		# Just went directly upwards
+		else:
+			x0 = 0
+			y0 = R
+			z0 = 0
+			xhat = 0
+			yhat = 1
+			zhat = 0
+		return [Point.Point(x0, y0, z0, cart = True), Point.Point(xhat, yhat, zhat, cart = True)]
 
 	def setMomentum(self, p):
-		self.pMomentum = p #in GeV
+		self.pMomentum = float(p) #in GeV
 
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):

@@ -6,19 +6,27 @@ import sys
 import cPickle as pickle 
 import time
 import Point
-
+import Octagon
 import DataSet
 import Event
 
 if __name__ == "__main__":
+	Oct = Octagon.Octagon(R = 1847.4)
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../../../data/pickles/pions/noB/AnaHit_Simu_pi-_10GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
+	data = pickle.load(open("../pickles/kaons/B/AnaHit_Simu_kaon-_1GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
+	data.setMomentum(1)
 	print "Done."
 	sys.stdout.flush()
 
-	event = data.events[11].hadronicNoiseCut()
+	for i in range(0, len(data.events)):
+		event = data.events[i].hadronicNoiseCut()
+		event.projectionDisplay(line = data.getAxis(isB = True))
+
+
+
+	"""
 	dotArray = []
 	yhat = Point.Point(0, 1, 0, cart = True)
 	w0List = np.linspace(0.5, 100, 1000)
@@ -31,7 +39,7 @@ if __name__ == "__main__":
 	plt.xlabel("w0")
 	plt.ylabel("Dot product from y-axis")
 	plt.show()
-
+	"""
 	sys.exit()
 
 	#testing of algorithms given a line axis

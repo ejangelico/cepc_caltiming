@@ -15,6 +15,7 @@ import Point
 import Helper
 import Layer
 import Point
+import Octagon
 
 
 global ecalRIN 
@@ -215,6 +216,8 @@ class Event:
 		ax1.set_ylabel("y-projected axis")
 		#hcal boundary
 		ax1.plot([-1000, 1000], [2058, 2058], 'k-')
+		Oct = Octagon.Octagon(1847.4)
+		Oct.plot(ax1)
 
 		ax2.scatter(z, y, c=scalarMap.to_rgba(t))
 		ax2.set_xlim([-1000, 1000])
@@ -433,7 +436,6 @@ class Event:
 		trimmedEvent = Event(cutpoints, self.evNum)
 
 		return trimmedEvent
-
 
 	#does a rod cut on all hit points in the event
 	#given a shower axis. 
@@ -688,16 +690,5 @@ class Event:
 
 		return (tcept[-1], 0)
 
-
-
-
-
+	def algo_Highway(self):
 		
-
-		
-
-
-
-
-
-
