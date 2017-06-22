@@ -22,9 +22,10 @@ if __name__ == "__main__":
 	#testing of algorithms given a line axis
 	#data.events[12].projectionDisplay()
 	#data.events[900].algo_rodLinearWithDepth(0.01)
-	smeardata = data.smear(0.0, 0)
+	#smeardata = data.smear(0.0, 0)
 	#smeardata.events[12].algo_rodLinearWithDepth(0.01)
-	smeardata.timeReco(algo=1, plotting=True)
+	#smeardata.timeReco(algo=1, plotting=True)
+	data.energyDepthPlot()
 
 
 

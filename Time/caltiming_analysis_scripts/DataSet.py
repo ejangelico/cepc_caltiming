@@ -87,8 +87,6 @@ class DataSet:
 		ax.set_xlabel("Longitudinal shower depth (lambda_i)")
 		plt.show()
 
-
-
 	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
@@ -100,7 +98,7 @@ class DataSet:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
 			elif algo == 1:
-				tEst, tTru = event.algo_rodLinearWithDepth(self.tSmear)
+				tEst, tTru = event.algo_Snake(self.tSmear)
 				if(tEst is None or tTru is None):
 					continue
 			else:

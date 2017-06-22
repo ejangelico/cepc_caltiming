@@ -485,7 +485,6 @@ class Event:
 
 
 
-
 	# Does a linear fit to the first time of arrival vs depth in each layer
 	# layerWidth = width around center point of each layer, mm
 	# timeCutoffLo = first hit time accepted by algo, ns
@@ -545,7 +544,7 @@ class Event:
 
 		return tEst, min(tList)
 
-	def algo_rodLinearWithDepth(self, timesmear):
+	def algo_Snake(self, timesmear):
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
