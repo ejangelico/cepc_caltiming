@@ -690,5 +690,28 @@ class Event:
 
 		return (tcept[-1], 0)
 
-	def algo_Highway(self):
+	def algo_Highway(self, rodRadius, showerAxis):
+		cLight = 299.792458 # mm/ns
+		eventCut = self.hadronicNoiseCut()
+		passedHits, rodDepths, rodTimes = eventCut.rodFilter(radius = 15, showerAxis = showerAxis)
+
+		times, depths = (list(t) for t in zip(*sorted(zip(rodTimes, rodDepths), key=lambda x: x[0])))
+		line0 = [hitTimes[0]-hitDepths[0]/cLight, 1/cLight] # Initial Guess, [yint, m]
+		dCut0 = 1.0
+
+		timesRemaining = []
+		depthsRemaining = []
+		for i in range(0, len(times)):
+			if (times[i] - (line0[0] + line0[1]*depths[i]))/np.sqrt(1+line0[1]**2) < dCut0:
+				timesRemaining.append(times[i])
+				depthsRemaining.append(depths[i])
+
+		fig, ax = fig.subplots()
+		ax.plot(times, depths, 'ro')
+		ax.plot(timesRemaining, depthsRemaining, 'ko')
+		ax.plot(depths, [line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
+		ax.plot(depths, [dCut0+line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
+		ax.plot(depths, [-dCut0+line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
+		plt.show()
+	
 		

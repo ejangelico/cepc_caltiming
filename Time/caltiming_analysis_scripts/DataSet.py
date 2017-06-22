@@ -21,17 +21,17 @@ class DataSet:
 
 	# Returns [Point(x0, y0, z0), Point(vx, vy, vz)]
 	def getAxis(self, isB = True, B = 3.5, R = 1847.4):
-		try:
-			self.pMomentum
-		except:
-			print "Must set momentum."
-			sys.exit()
-		if self.pMomentum is None:
-			print "Must set momentum."
-			sys.exit()
-
-		# Compute the line parameters where the curve intersects the calorimeter
 		if isB:
+			try:
+				self.pMomentum
+			except:
+				print "Must set momentum."
+				sys.exit()
+			if self.pMomentum is None:
+				print "Must set momentum."
+				sys.exit()
+
+			# Compute the line parameters where the curve intersects the calorimeter
 			Oct = Octagon.Octagon(R)
 			rho = 3336.0 * self.pMomentum/float(B) 
 			intersect = Oct.circleIntersect(rho)
@@ -45,6 +45,7 @@ class DataSet:
 
 			z0 = 0
 			zhat = 0
+
 		# Just went directly upwards
 		else:
 			x0 = 0

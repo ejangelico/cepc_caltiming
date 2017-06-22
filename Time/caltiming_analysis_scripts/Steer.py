@@ -15,16 +15,17 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/kaons/B/AnaHit_Simu_kaon-_1GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
-	data.setMomentum(1)
+	data = pickle.load(open("../pickles/pions/noB/AnaHit_Simu_pi-_5GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
+
+	data.events[10].algo_Highway(rodRadius = 15, showerAxis = data.getAxis(isB = False))
+
+
 
 	for i in range(0, len(data.events)):
 		event = data.events[i].hadronicNoiseCut()
 		event.projectionDisplay(line = data.getAxis(isB = True))
-
-
 
 	"""
 	dotArray = []
