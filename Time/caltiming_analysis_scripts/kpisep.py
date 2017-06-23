@@ -13,25 +13,10 @@ import DataSet
 import Event
 
 
-def plotTimeHistogram(data1, data2, fig, ax):
 
-	recoTimes1, eff1 = data1.listReconstructedTimes(algo=1)
-	recoTimes2, eff2 = data2.listReconstructedTimes(algo=1)
-
-	#best gaus fit
-	(mu1, sig1) = norm.fit(recoTimes1)
-	(mu2, sig2) = norm.fit(recoTimes2)
-	n, bins1, _ = ax.hist(recoTimes1, 80, normed=1)
-	y1 = mlab.normpdf(bins1, mu1, sig1)
-	n, bins2, _ = ax.hist(recoTimes2, 80, normed=1)
-	y2 = mlab.normpdf(bins2, mu2, sig2)
-	ax.plot(bins1, y1)
-	ax.plot(bins2, y2)
-
-
-def getMisidentification(data1, data2):
-	recoTimes1, eff1 = data1.listReconstructedTimes(algo=1)
-	recoTimes2, eff2 = data2.listReconstructedTimes(algo=1)
+def getMisidentification(data1, data2, alg):
+	recoTimes1, eff1 = data1.listReconstructedTimes(algo=alg)
+	recoTimes2, eff2 = data2.listReconstructedTimes(algo=alg)
 
 
 	#make a cut down the middle in between the means of 
@@ -74,42 +59,6 @@ def getMisidentification(data1, data2):
 	correct2 = N2 - misidentified2
 
 	return (N1, correct1, misidentified1, N2, correct2, misidentified2)
-
-
-
-def getOverlap(data1, data2):
-	recoTimes1, eff1 = data1.listReconstructedTimes(algo=1)
-	recoTimes2, eff2 = data2.listReconstructedTimes(algo=1)
-
-
-	#This is the chunk of code for doing a binned separation
-	#and counting area overlap by looking at overlapping bins
-
-	#make a list with all of the times
-	#this helps binning both distributions at once
-	collectiveTimes = [_ for _ in recoTimes1]
-	for t in recoTimes2:
-		collectiveTimes.append(t)
-
-	#this binning is super critical, figure out how to do it
-	numBins = [20, 50, 100, 200, 400]
-
-	for nb in numBins:
-		tothist, bin_edges = np.histogram(collectiveTimes, nb)
-		#bin both distributions the same
-		hist1, bin_edges = np.histogram(recoTimes1, bin_edges, normed = 1)
-		hist2, bin_edges = np.histogram(recoTimes2, bin_edges, normed = 1)
-
-		binwidth = abs(bin_edges[0] - bin_edges[1])
-		overlapArea = 0
-		for i in range(len(bin_edges) - 1):
-			if(hist1[i] > 0 and hist2[i] > 0):
-				overlapArea += min(hist1[i], hist2[i])*binwidth
-			else:
-				overlapArea += 0
-
-		print overlapArea
-
 
 
 
@@ -177,7 +126,7 @@ def plotFullData(sepdatafile):
 
 	for sm in smears:
 		energyIndexedData = separationData[str(sm)]
-		
+
 
 
 
@@ -189,8 +138,8 @@ def plotFullData(sepdatafile):
 if __name__ == "__main__":
 
 
-	pickleFullDataSet()
-	sys.exit()
+	#pickleFullDataSet()
+	#sys.exit()
 
 	#--Start data loading--#
 
@@ -203,11 +152,7 @@ if __name__ == "__main__":
 	kMomenta = [2.5]
 	pMomenta = [2.5]
 
-
-	kcorrect = []
-	kmis = []
-	pcorrect = []
-	pmis = []
+	#smears = [0.010]
 
 	smears = [0.001, 0.003, 0.009, 0.018, 0.036, 0.072, 0.144, 0.288, 0.576]
 	for sm in smears:
@@ -239,54 +184,20 @@ if __name__ == "__main__":
 		for i in range(len(pMomenta)):
 			pdata[i].setMomentum(pMomenta[i])
 
-		#align these data lists in momentum
-		kdata = sorted(kdata, key=lambda x: x.getMomentum())
-		pdata = sorted(pdata, key=lambda x: x.getMomentum())
-
 		#---End data loading---#
 
-		a, b, c, d = getMisidentification(kdata[0], pdata[0])
-		kcorrect.append(a/1000.0)
-		kmis.append(float(b)/float((c + d)))
-		pcorrect.append(c/1000.0)
-		pmis.append(float(d)/float((a + b)))
+		t0pi = pdata[0].simpleReco()
+		t0k = kdata[0].simpleReco()
 
+		collective = t0pi
+		for t in t0k:
+			collective.append(t)
+		fig, ax = plt.subplots()
+		#ax.hist(t0pi, 300, alpha=0.5)
+		#ax.hist(t0k, 300, alpha=0.5)
+		ax.hist(collective, 300)
+		plt.show()
 
-	#rescale smears
-	smears = [_*1000 for _ in smears]
-
-	fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols = 2, nrows = 2, figsize=(12, 7))
-	ax1.plot(smears, kcorrect, 'mo-', label="Correctly identified Kaons")
-	ax2.plot(smears, kmis, 'm^-', label="Misidentification fraction kaons")
-	ax3.plot(smears, pcorrect, 'ro-', label="Correctly identified pions")
-	ax4.plot(smears, pmis, 'r^-', label="Misidentification fraction pions")
-	ax1.set_xlabel("Time smear (ps)")
-	ax2.set_xlabel("Time smear (ps)")
-	ax3.set_xlabel("Time smear (ps)")
-	ax4.set_xlabel("Time smear (ps)")
-	ax1.set_ylabel("Fraction of total particle generated")
-	ax2.set_ylabel("Fraction of total particle generated")
-	ax3.set_ylabel("Fraction of total particle generated")
-	ax4.set_ylabel("Fraction of total particle generated")
-	ax1.legend()
-	ax2.legend()
-	ax3.legend()
-	ax4.legend()
-	ax1.set_xscale('log')
-	ax2.set_xscale('log')
-	ax3.set_xscale('log')
-	ax4.set_xscale('log')
-	ax1.set_ylim([0, 1])
-	#ax2.set_ylim([0, 1/300.0])
-	ax3.set_ylim([0, 1])
-	#ax4.set_ylim([0, 1/300.0])
-	ax1.grid(True)
-	ax2.grid(True)
-	ax3.grid(True)
-	ax4.grid(True)
-	plt.savefig("misidentPlot_2.5GeV_200ps_n5.png", bbox_inches='tight')
-
-	
 
 
 

@@ -139,6 +139,10 @@ class DataSet:
 				tEst, tTru = event.algo_Snake(self.tSmear)
 				if(tEst is None or tTru is None):
 					continue
+			elif algo == 2:
+				tEst, n = event.algo_Simple(self.pMomentum, self.tSmear)
+				if(tEst is None or n is None):
+					continue
 			else:
 				print "Please specify the time reconstruction algorithm"
 				sys.exit()
@@ -149,6 +153,20 @@ class DataSet:
 		efficiency = float(len(tEstList))/float(len(self.events))
 
 		return (tEstList, efficiency)
+
+	def simpleReco(self):
+		t0list = []
+		nlist = []
+		for event in self.events:
+			t0, n = event.algo_Simple(self.pMomentum, self.tSmear)
+			if(t0 is None or n is None):
+				continue
+			else:
+				t0list.append(t0)
+				nlist.append(n)
+
+		return t0list
+
 
 
 	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats

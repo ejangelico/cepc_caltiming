@@ -19,8 +19,10 @@ import Point
 
 
 global ecalRIN 
+global speedOfLight
 
 ecalRIN = 1847.4 #mm
+speedOfLight = 299.792458 #mm/ns
 
 
 class Event:
@@ -732,6 +734,49 @@ class Event:
 
 
 
+	#an algorithm that histograms time of arrivals in 
+	#the event, then forms to hypotheses and decides
+	#two arrival times based on the average of points
+	#contained in the fast component of the time distribution
+	def algo_Simple(self, momentum, timesmear):	
+
+		cutEvent = self.hadronicNoiseCut()
+		if(len(cutEvent.hitPoints) <= 15):
+			#print "did pass rough cut, adapt the cutting algorithm later"
+			#print "you need to be able to make a general rough cut on noise"
+			return (None, 1)
+
+		#calculations of beta based on
+		#a hypothesis of what the particle is
+		mkaon = 0.493677 #GeV
+		ekaon = np.sqrt(mkaon**2 + momentum**2)
+		beta_kaon = momentum/ekaon
+
+		T0_kaonHyp = []
+		for hp in cutEvent.hitPoints:
+			rho = np.sqrt(hp.getX()**2 + hp.getY()**2 + hp.getZ()**2)
+			t = hp.getT()
+			T0_kaonHyp.append(t - rho/(speedOfLight*beta_kaon))
+
+
+		#take the earliest time and 
+		#5 ps later than that time 
+		#and average the times
+		pscut = timesmear
+		passed = []
+		earliest = min(T0_kaonHyp)
+		for t0 in T0_kaonHyp:
+			if(t0 < pscut + earliest):
+				passed.append(t0)
+
+		if(len(passed) == 0):
+			return (None, None)
+
+		print len(passed)
+		#return the average of those times
+		#and the number of hits kept
+		return (np.mean(passed), len(passed))
+		
 		
 
 
