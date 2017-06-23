@@ -1,6 +1,7 @@
 import matplotlib 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
+from matplotlib.colors import LogNorm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.stats import linregress
@@ -548,7 +549,7 @@ class Event:
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
-		if(len(cutEvent.hitPoints) <= 5):
+		if(len(cutEvent.hitPoints) <= 15):
 			#print "did pass rough cut, adapt the cutting algorithm later"
 			#print "you need to be able to make a general rough cut on noise"
 			return (None, 1)
@@ -566,14 +567,6 @@ class Event:
 
 		rodEvent = Event(passed, 0)
 		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
-
-		#calculate fraction of total energy
-		#contained in the rod--uses trimmed event so
-		#as to ignore noise/etc
-		etot = np.sum([_.getE() for _ in cutEvent.hitPoints])
-		erod = np.sum([_.getE() for _ in passed])
-		efrac = erod/etot
-
 
 		#---BEGIN N-hit iteration fitting---#
 		#order the passed hits based on time
@@ -609,7 +602,7 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				pscut = 0.7/np.sqrt(n)
+				pscut = 0.2/(n**(0.5))
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
@@ -637,10 +630,12 @@ class Event:
 
 		#if you haven't used at least 6
 		#points to do the fit
-		if(len(nit) < 4):
+		if(len(timebank) < 14):
 			return (None, 3)
 
 
+		#for testing cutting efficiencies
+		#return (len(passed), len(timebank))
 		#-----------------------#
 
 		#ttrue = 6.590 #ns for 1GeV charged kaon
@@ -671,14 +666,73 @@ class Event:
 
 		return (tcept[-1], 0)
 
+	def algo_Huff(self, timesmear, showerAxis):
+		#perform initial rough cuts
+		cutEvent = self.hadronicNoiseCut()
+		if(len(cutEvent.hitPoints) <= 5):
+			#print "did pass rough cut, adapt the cutting algorithm later"
+			#print "you need to be able to make a general rough cut on noise"
+			return (None, 1)
 
+		#here input the algorithm that finds
+		#the shower axis.
+		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
+
+		#cutEvent.projectionDisplay(showerAxis)
+		radius = 15 #mm
+		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
+
+		if(len(passed) <= 5):
+			return (None, 2)
+
+		rodEvent = Event(passed, 0)
+		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
+
+		#---BEGIN Hough transform fitting---#
+		
+		#parametrizes a point (d, t)
+		#returns an array of rho's
+		#and thetas
+		def hough(d, t):
+			thetas = np.linspace(0, np.pi, 1000, endpoint=False)
+			rhos = [d*np.cos(x) + t*np.sin(x) for x in thetas]
+			return (thetas, rhos)
+
+		#take in a th and rho from hough
+		#transform and return b, m
+		#for y = mx + b
+		def hough_inv(th, rho):
+			return (rho/np.sin(th), -1*np.cos(th)/np.sin(th))
+
+		#line function mx + b
+		def line(x, b, m):
+			return (m*x + b)
+
+		rhos = []
+		thetas = []
+		for i in range(len(rodDepths)):
+			tt, rr = hough(rodDepths[i], rodTimes[i])
+			for t in tt:
+				thetas.append(t)
+			for r in rr:
+				rhos.append(r)
+
+
+		H, thedges, rhoedges = np.histogram2d(thetas, rhos, bins=1500)
+		#find the max x and y
+		idx = list(H.flatten()).index(H.max())
+		th_i, rho_i = idx / H.shape[1], idx % H.shape[1] 	#copied from stack exchange
+		b, m = hough_inv(thedges[th_i + 1], rhoedges[rho_i + 1])
+
+
+		fig, ax = plt.subplots(figsize=(10,7))
+		ax.plot(rodDepths, rodTimes, 'ko')
+		ax.plot(rodDepths, line(np.array(rodDepths), b, m), 'b-', label="treco - ttrue = ")
+		plt.show()
 
 
 
 		
-
-		
-
 
 
 

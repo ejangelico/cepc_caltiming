@@ -73,7 +73,8 @@ def getMisidentification(data1, data2):
 	correct1 = N1 - misidentified1
 	correct2 = N2 - misidentified2
 
-	return (correct1, misidentified1, correct2, misidentified2)
+	return (N1, correct1, misidentified1, N2, correct2, misidentified2)
+
 
 
 def getOverlap(data1, data2):
@@ -113,6 +114,72 @@ def getOverlap(data1, data2):
 
 
 		
+def pickleFullDataSet():
+	kaonpath = "../../../data/pickles/kaons/noB/"
+	pionpath = "../../../data/pickles/pions/noB/"
+
+	kfilenames = ["AnaHit_Simu_kaon-_1GeV_E30L_E10mm_H40L_H10mm.p", "AnaHit_Simu_kaon-_2.5GeV_E30L_E10mm_H40L_H10mm.p", "AnaHit_Simu_kaon-_5GeV_E30L_E10mm_H40L_H10mm.p", "AnaHit_Simu_kaon-_7.5GeV_E30L_E10mm_H40L_H10mm.p","AnaHit_Simu_kaon-_10GeV_E30L_E10mm_H40L_H10mm.p"]
+	pfilenames = ["AnaHit_Simu_pi-_1GeV_E30L_E10mm_H40L_H10mm.p","AnaHit_Simu_pi-_2.5GeV_E30L_E10mm_H40L_H10mm.p","AnaHit_Simu_pi-_5GeV_E30L_E10mm_H40L_H10mm.p","AnaHit_Simu_pi-_7.5GeV_E30L_E10mm_H40L_H10mm.p","AnaHit_Simu_pi-_10GeV_E30L_E10mm_H40L_H10mm.p"]
+
+	momenta = [1, 2.5, 5, 7.5, 10]
+
+
+	#structure of final data:
+	#[[[data type 1 for time smear 1 as a function of energy], [data type 2 for time smear 1 ...], ...], [time smear 2]] 
+
+	smears = [0.001, 0.003, 0.009, 0.018, 0.036, 0.072, 0.144, 0.288, 0.576]
+	separationData = {}
+
+	for sm in smears:
+		kdata = []
+		pdata = []
+		print "Loading kaon data"
+		for kfn in kfilenames:
+			print "Loading file " + str(kfn) + "...", 
+			sys.stdout.flush()
+			data = pickle.load(open(kaonpath+kfn, 'rb'))
+			smdata = data.smear(sm, 0)
+			print "Done."
+			sys.stdout.flush()
+			kdata.append(smdata)
+		print "Done loading kaons"
+		print "Loading pion data"
+		for pfn in pfilenames:
+			print "Loading file " + str(pfn) + "...", 
+			sys.stdout.flush()
+			data = pickle.load(open(pionpath+pfn, 'rb'))
+			smdata = data.smear(sm, 0)
+			print "Done."
+			sys.stdout.flush()
+			pdata.append(smdata)
+		print "Done loading pions"
+
+		#---End data loading---#
+		separationData[str(sm)] = []
+		for i in range(len(momenta)):
+			print "--On momentum " + str(momenta[i]) + "GeV"
+			kdata[i].setMomentum(momenta[i])
+			pdata[i].setMomentum(momenta[i])
+
+			N1, correct1, mis1, N2, correct2, mis2 = getMisidentification(kdata[i], pdata[i])
+
+			momentumPointData = [N1, correct1, mis1, N2, correct2, mis2]
+			separationData[str(sm)].append(momentumPointData)
+
+
+	pickle.dump([momenta, smears, separationData], open("snakeperformance_fulldata_fixedTimeCut_15mmRod.p", 'wb'))
+
+			
+def plotFullData(sepdatafile):
+	momenta, smears, separationData = pickle.load(open(sepdatafile, 'rb'))
+
+	fig, ((ax1, ax2),(ax3, ax4)) = plt.subplots(ncols = 2, nrows = 2, figsize=(13, 7))
+
+	for sm in smears:
+		energyIndexedData = separationData[str(sm)]
+		
+
+
 
 	
 
@@ -120,6 +187,10 @@ def getOverlap(data1, data2):
 
 
 if __name__ == "__main__":
+
+
+	pickleFullDataSet()
+	sys.exit()
 
 	#--Start data loading--#
 
@@ -176,9 +247,9 @@ if __name__ == "__main__":
 
 		a, b, c, d = getMisidentification(kdata[0], pdata[0])
 		kcorrect.append(a/1000.0)
-		kmis.append(b/(a + b))
+		kmis.append(float(b)/float((c + d)))
 		pcorrect.append(c/1000.0)
-		pmis.append(d/(c + d))
+		pmis.append(float(d)/float((a + b)))
 
 
 	#rescale smears
@@ -206,14 +277,14 @@ if __name__ == "__main__":
 	ax3.set_xscale('log')
 	ax4.set_xscale('log')
 	ax1.set_ylim([0, 1])
-	ax2.set_ylim([0, 1])
+	#ax2.set_ylim([0, 1/300.0])
 	ax3.set_ylim([0, 1])
-	ax4.set_ylim([0, 1])
+	#ax4.set_ylim([0, 1/300.0])
 	ax1.grid(True)
 	ax2.grid(True)
 	ax3.grid(True)
 	ax4.grid(True)
-	plt.savefig("misidentPlot_2.5GeV_700pscut.png", bbox_inches='tight')
+	plt.savefig("misidentPlot_2.5GeV_200ps_n5.png", bbox_inches='tight')
 
 	
 

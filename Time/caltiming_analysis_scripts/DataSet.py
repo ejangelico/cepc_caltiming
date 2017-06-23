@@ -98,16 +98,18 @@ class DataSet:
 		print "Reconstructing time for each event...",
 		sys.stdout.flush()
 		failCases = []
+		npassed = []
+		nused = []
 		for event in self.events:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
 			elif algo == 1:
 				tEst, tTru = event.algo_Snake(self.tSmear)
-				if(tEst is None and tTru is None):
+				if(tEst is None or tTru is None):
 					continue
-				elif(tEst is None and tTru > 0):
-					failCases.append(tTru)
-
+				else:
+					npassed.append(tEst)
+					nused.append(tTru)
 			else:
 				print "Please specify the time reconstruction algorithm"
 				sys.exit()
@@ -115,8 +117,11 @@ class DataSet:
 		print "Done."
 		sys.stdout.flush()
 
-		fig, ax = plt.subplots()
-		ax.hist(failCases)
+		fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+		ax1.hist(npassed)
+		ax1.set_title("Number of hits after rod cut")
+		ax2.hist(nused)
+		ax2.set_title("Number of hits used in the final snake fit")
 		plt.show()
 
 

@@ -14,7 +14,7 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../../../data/pickles/pions/noB/AnaHit_Simu_pi-_2.5GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
+	data = pickle.load(open("../../../data/pickles/kaons/noB/AnaHit_Simu_kaon-_1GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
@@ -22,10 +22,11 @@ if __name__ == "__main__":
 	#testing of algorithms given a line axis
 	#data.events[12].projectionDisplay()
 	#data.events[900].algo_rodLinearWithDepth(0.01)
-	smeardata = data.smear(0.100, 0)
+	smeardata = data.smear(0.5, 0)
 	#smeardata.events[12].algo_rodLinearWithDepth(0.01)
-	smeardata.timeReco(algo=1, plotting=True)
+	#smeardata.events[50].algo_Snake(0)
 	#smeardata.testSnake()
+	smeardata.timeReco(1, True)
 
 
 
