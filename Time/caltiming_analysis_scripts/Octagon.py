@@ -82,3 +82,10 @@ class Octagon:
 		x0 = rho*(np.cos(thetaInt)-1)
 		y0 = rho*np.sin(thetaInt)
 		return [x0, y0]
+
+	# Computes the arc distance of a circle going upward from the origin at radius rho
+	def arcDistance(self, rho, tol = 1e-4):
+		x0, y0 = self.circleIntersect(rho, tol)
+
+		theta = np.arctan(y0/(x0+rho))
+		return theta*rho

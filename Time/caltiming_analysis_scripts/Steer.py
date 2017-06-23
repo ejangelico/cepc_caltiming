@@ -15,13 +15,16 @@ if __name__ == "__main__":
 
 	print "Loading file...", 
 	sys.stdout.flush()
-	data = pickle.load(open("../pickles/pions/noB/AnaHit_Simu_pi-_5GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
+	data = pickle.load(open("../pickles/kaons/noB/AnaHit_Simu_kaon-_1GeV_E30L_E10mm_H40L_H10mm.p", 'rb'))
 	print "Done."
 	sys.stdout.flush()
 
-	data.events[10].algo_Highway(rodRadius = 15, showerAxis = data.getAxis(isB = False))
-
-
+	data = data.smear(0.05, 0)
+	
+	for i in range(0, len(data.events)):
+		print "Event number:", i
+		print data.events[i].algo_Highway(rodRadius = 15, showerAxis = data.getAxis(isB = False))
+	sys.exit()
 
 	for i in range(0, len(data.events)):
 		event = data.events[i].hadronicNoiseCut()

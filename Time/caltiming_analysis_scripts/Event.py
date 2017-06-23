@@ -677,26 +677,81 @@ class Event:
 
 	def algo_Highway(self, rodRadius, showerAxis):
 		cLight = 299.792458 # mm/ns
+		
+		# Hit cut and event cut
 		eventCut = self.hadronicNoiseCut()
 		passedHits, rodDepths, rodTimes = eventCut.rodFilter(radius = 15, showerAxis = showerAxis)
+		if len(passedHits) < 3:
+			return None
 
+		# The main highway algorithm
+
+		# Parameters of the algorithm
+		dCut = 1.0    # Initial width of the band
+		dStep = 0.01 # How much to step dCut by
+		numIter = 500 # Maximum number of iterations
+		cutPointCountLength = 10 # Stores the number of points cut over the last cutPointCountLength iterations
+		derivThreshold = 5 # If the sum of the number of points cut over the last cutPointCountLength iterations
+				   # is greater than derivThreshold, then stop iterating and return the time from
+				   # cutPointCountLength iterations ago
+
+		# Sort hits by time
 		times, depths = (list(t) for t in zip(*sorted(zip(rodTimes, rodDepths), key=lambda x: x[0])))
-		line0 = [hitTimes[0]-hitDepths[0]/cLight, 1/cLight] # Initial Guess, [yint, m]
-		dCut0 = 1.0
-
-		timesRemaining = []
-		depthsRemaining = []
-		for i in range(0, len(times)):
-			if (times[i] - (line0[0] + line0[1]*depths[i]))/np.sqrt(1+line0[1]**2) < dCut0:
-				timesRemaining.append(times[i])
-				depthsRemaining.append(depths[i])
-
-		fig, ax = fig.subplots()
-		ax.plot(times, depths, 'ro')
-		ax.plot(timesRemaining, depthsRemaining, 'ko')
-		ax.plot(depths, [line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
-		ax.plot(depths, [dCut0+line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
-		ax.plot(depths, [-dCut0+line0[0]+line0[1]*depths[i] for i in range(0, len(depths))], 'k')
-		plt.show()
-	
 		
+		# Fit functions for the linear fit
+		lineFunc = lambda p, x: p[1]*x+p[0]
+		resFunc  = lambda p, x, y: lineFunc(p, x) - y
+
+		line = [times[0]-depths[0]/cLight, 1/cLight] # Initial Guess, [yint, m] for line params
+
+		# The variables that stores the points left after band cut
+		timesRemaining = times
+		depthsRemaining = depths
+		
+		# The quantities to measure at each iteration, not including the first guess
+		t0List = []
+		numPointsList = []
+		cutPointCount = []
+			
+		for n in range(0, numIter):
+			# The length before this iteration's band cut
+			lengthPrev = len(timesRemaining)
+
+			# The list of times/depths after the band cut
+			timesRemaining = []
+			depthsRemaining = []
+
+			# Do the band cut
+			for i in range(0, len(times)):
+				# This is the perpendicular distance of a point from the line
+				if np.abs((times[i] - (line[0] + line[1]*depths[i])))/np.sqrt(1+line[1]**2) < dCut:
+					timesRemaining.append(times[i])
+					depthsRemaining.append(depths[i])
+
+			# If there are only two points left, stop the algorithm, it failed
+			if len(timesRemaining) <= 2:
+				#print "Highway failed."
+				return None
+
+			# If there are more than two points, do a least squares fit
+			result = least_squares(resFunc, [line[0], line[1]], args = (np.array(depthsRemaining), np.array(timesRemaining)))
+			t0, m = result.x
+
+			# Update the line parameters and the band width
+			line[0] = t0
+			line[1] = m
+			dCut -= dStep
+
+			# Update the t0List
+			t0List.append(t0)
+
+			# Check if losing points to quickly and return t0 if so
+			numPointsCut = lengthPrev - len(timesRemaining)
+			cutPointCount.append(numPointsCut)
+			if len(cutPointCount) > cutPointCountLength:
+				del cutPointCount[0]
+			if sum(cutPointCount) >= derivThreshold:
+				return t0List[-cutPointCountLength]
+
+		# If you make it outside the for loop, there has been some strange failure
+		return None
