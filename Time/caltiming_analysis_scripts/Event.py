@@ -689,7 +689,7 @@ class Event:
 		# Parameters of the algorithm
 		dCut = 1.0    # Initial width of the band
 		dStep = 0.01 # How much to step dCut by
-		numIter = 500 # Maximum number of iterations
+		numIter = 100 # Maximum number of iterations
 		cutPointCountLength = 10 # Stores the number of points cut over the last cutPointCountLength iterations
 		derivThreshold = 5 # If the sum of the number of points cut over the last cutPointCountLength iterations
 				   # is greater than derivThreshold, then stop iterating and return the time from
@@ -752,6 +752,10 @@ class Event:
 				del cutPointCount[0]
 			if sum(cutPointCount) >= derivThreshold:
 				return t0List[-cutPointCountLength]
+
+		
+		
+
 
 		# If you make it outside the for loop, there has been some strange failure
 		return None
