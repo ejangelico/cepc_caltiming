@@ -9,7 +9,7 @@ import Point
 import Octagon
 
 class DataSet:
-	def __init__(self, events = None, tSmear = None, eSmear = None, pMomentum=None):
+	def __init__(self, events = None, tSmear = 0, eSmear = 0, pMomentum=None):
 		self.events = events
 		self.tSmear = tSmear 	#smear 1sigma in ns
 
@@ -58,6 +58,10 @@ class DataSet:
 
 	def setMomentum(self, p):
 		self.pMomentum = float(p) #in GeV
+
+
+	def getMomentum(self):
+		return self.pMomentum
 
 	# Plots the time-average histogram of all the events
 	def avTimeHist(self, numBins, rangeMin, rangeMax):
@@ -128,6 +132,83 @@ class DataSet:
 		ax.set_xlabel("Longitudinal shower depth (lambda_i)")
 		plt.show()
 
+
+	def testSnake(self, algo=1):
+		tEstList = []
+		print "Reconstructing time for each event...",
+		sys.stdout.flush()
+		failCases = []
+		npassed = []
+		nused = []
+		for event in self.events:
+			if algo == 0:
+				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			elif algo == 1:
+				tEst, tTru = event.algo_Snake(self.tSmear)
+				if(tEst is None or tTru is None):
+					continue
+				else:
+					npassed.append(tEst)
+					nused.append(tTru)
+			else:
+				print "Please specify the time reconstruction algorithm"
+				sys.exit()
+			tEstList.append(tEst)
+		print "Done."
+		sys.stdout.flush()
+
+		fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2)
+		ax1.hist(npassed)
+		ax1.set_title("Number of hits after rod cut")
+		ax2.hist(nused)
+		ax2.set_title("Number of hits used in the final snake fit")
+		plt.show()
+
+
+	#almost identical to "timeReco()" but 
+	#has less meat and just returns a list of 
+	#reconstructed arrival times and the efficiency
+	def listReconstructedTimes(self, algo=0):
+		tEstList = []
+		print "Reconstructing time for each event...",
+		sys.stdout.flush()
+		for event in self.events:
+			if algo == 0:
+				tEst, tTru = event.algo_linearFirstTimeByLayer()
+			elif algo == 1:
+				tEst, tTru = event.algo_Snake(self.tSmear)
+				if(tEst is None or tTru is None):
+					continue
+			elif algo == 2:
+				tEst, n = event.algo_Simple(self.pMomentum, self.tSmear)
+				if(tEst is None or n is None):
+					continue
+			else:
+				print "Please specify the time reconstruction algorithm"
+				sys.exit()
+			tEstList.append(tEst)
+		print "Done."
+		sys.stdout.flush()
+
+		efficiency = float(len(tEstList))/float(len(self.events))
+
+		return (tEstList, efficiency)
+
+	def simpleReco(self):
+		t0list = []
+		nlist = []
+		for event in self.events:
+			t0, n = event.algo_Simple(self.pMomentum, self.tSmear)
+			if(t0 is None or n is None):
+				continue
+			else:
+				t0list.append(t0)
+				nlist.append(n)
+
+		return t0list
+
+
+
 	# Given the index of the event algorithm to use, reconstructs the reco-truth times and does stats
 	def timeReco(self, algo = 0, plotting = False):
 		tEstList = []
@@ -174,6 +255,7 @@ class DataSet:
 			ax.set_title("10 GeV e-, 10ps pixel resolution", fontsize=23)
 			Helper.resize(fig, ax)
 			tDiffBins = [x*1000 for x in tDiffBins]
+			ax.plot([tAv*1000, tAv*1000], [0, 200], 'r', linewidth=4)
 			ax.bar(tDiffBins[:-1], tDiffCounts, width = tDiffBins[1]-tDiffBins[0], color = 'b')
 			ax.set_xlabel("$t_{reco} - t_{true}$" + " (ps) ", fontsize = 20)
 			ax.set_ylabel("Counts/bin for 1 GeV electrons", fontsize = 20)

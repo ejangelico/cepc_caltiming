@@ -1,6 +1,7 @@
 import matplotlib 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cmx
+from matplotlib.colors import LogNorm
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 from scipy.stats import linregress
@@ -19,8 +20,10 @@ import Octagon
 
 
 global ecalRIN 
+global speedOfLight
 
 ecalRIN = 1847.4 #mm
+speedOfLight = 299.792458 #mm/ns
 
 
 class Event:
@@ -541,10 +544,10 @@ class Event:
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
-		if(len(cutEvent.hitPoints) == 0):
+		if(len(cutEvent.hitPoints) <= 7):
 			#print "did pass rough cut, adapt the cutting algorithm later"
 			#print "you need to be able to make a general rough cut on noise"
-			return (None, None)
+			return (None, 1)
 
 		#here input the algorithm that finds
 		#the shower axis.
@@ -554,20 +557,11 @@ class Event:
 		radius = 15 #mm
 		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
 
-				
-		if(len(passed) <= 5):
-			return (None, None)
+		if(len(passed) <= 8):
+			return (None, 2)
 
 		rodEvent = Event(passed, 0)
 		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
-
-		#calculate fraction of total energy
-		#contained in the rod--uses trimmed event so
-		#as to ignore noise/etc
-		etot = np.sum([_.getE() for _ in cutEvent.hitPoints])
-		erod = np.sum([_.getE() for _ in passed])
-		efrac = erod/etot
-
 
 		#---BEGIN N-hit iteration fitting---#
 		#order the passed hits based on time
@@ -603,10 +597,10 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				if(timesmear == 0):
-					pscut = 1.5*0.01/np.sqrt(n)
+				if(timesmear <= 0.05):
+					pscut = 0.05/(n**(0.5))
 				else:
-					pscut = 1.5*timesmear/np.sqrt(n)
+					pscut = 1.5*timesmear/(n**(0.5))
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
@@ -632,43 +626,36 @@ class Event:
 
 		#---Final outlier cuts---#
 
-		#if you haven't used at least 6
+		#if you haven't used at least 7
 		#points to do the fit
-		if(len(nit) < 4):
-			return (None, None)
-
-		#calculate chi^2, pearsons test
-		if(costs[-1] > 0.01):
-			return (None, None)
+		if(len(timebank) < 7):
+			return (None, 3)
 
 
-
-
-
+		#for testing cutting efficiencies
+		#return (len(passed), len(timebank))
 		#-----------------------#
 
 		#ttrue = 6.590 #ns for 1GeV charged kaon
-
 		"""
-		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
+		
+		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(13,7))
 		ax1.plot(nit, tcept, 'ro-')
 		ax1.set_xlabel("number of iterations")
-		ax1.set_ylabel("time intercept of fit")
+		ax1.set_ylabel("time intercept of linear fit")
 		ax2.plot(rodDepths, rodTimes, 'ko')
-		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="treco - ttrue = ")
+		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="N used = " + str(len(timebank)))
 		ax2.plot(depthbank, timebank, 'ro')
 		ax2.legend()
 		ax2.set_xlabel("rod depth (mm)")
 		ax2.set_ylabel("hit time (ns)")
-		ax3.plot(nit[1:], differentialTCept, 'go--')
-		ax3.set_ylabel("cint running average")
-		ax4.plot(nit, tcept_std, 'mo--')
-		ax4.set_ylabel("std running")
+		ax3.plot(nit[1:], differentialTCept, 'go-')
+		ax3.set_ylabel("differenetial time intercept")
+		ax4.plot(nit, tcept_std, 'mo-')
+		ax4.set_ylabel("running standard deviation")
 		plt.show()
 
-		
-		if(tcept[-1] > 6.25):
-			print "**" + str(self.evNum)
+		cutEvent.projectionDisplay()
 
 		print self.evNum
 		"""
@@ -755,3 +742,115 @@ class Event:
 
 		# If you make it outside the for loop, there has been some strange failure
 		return None
+		
+
+	def algo_Huff(self, timesmear, showerAxis):
+		#perform initial rough cuts
+		cutEvent = self.hadronicNoiseCut()
+		if(len(cutEvent.hitPoints) <= 5):
+			#print "did pass rough cut, adapt the cutting algorithm later"
+			#print "you need to be able to make a general rough cut on noise"
+			return (None, 1)
+
+		#here input the algorithm that finds
+		#the shower axis.
+		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
+
+		#cutEvent.projectionDisplay(showerAxis)
+		radius = 15 #mm
+		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
+
+		if(len(passed) <= 5):
+			return (None, 2)
+
+		rodEvent = Event(passed, 0)
+		#rodEvent.projectionDisplay(showerAxis, ecalIntersect)
+
+		#---BEGIN Hough transform fitting---#
+		
+		#parametrizes a point (d, t)
+		#returns an array of rho's
+		#and thetas
+		def hough(d, t):
+			thetas = np.linspace(0, np.pi, 1000, endpoint=False)
+			rhos = [d*np.cos(x) + t*np.sin(x) for x in thetas]
+			return (thetas, rhos)
+
+		#take in a th and rho from hough
+		#transform and return b, m
+		#for y = mx + b
+		def hough_inv(th, rho):
+			return (rho/np.sin(th), -1*np.cos(th)/np.sin(th))
+
+		#line function mx + b
+		def line(x, b, m):
+			return (m*x + b)
+
+		rhos = []
+		thetas = []
+		for i in range(len(rodDepths)):
+			tt, rr = hough(rodDepths[i], rodTimes[i])
+			for t in tt:
+				thetas.append(t)
+			for r in rr:
+				rhos.append(r)
+
+
+		H, thedges, rhoedges = np.histogram2d(thetas, rhos, bins=1500)
+		#find the max x and y
+		idx = list(H.flatten()).index(H.max())
+		th_i, rho_i = idx / H.shape[1], idx % H.shape[1] 	#copied from stack exchange
+		b, m = hough_inv(thedges[th_i + 1], rhoedges[rho_i + 1])
+
+
+		fig, ax = plt.subplots(figsize=(10,7))
+		ax.plot(rodDepths, rodTimes, 'ko')
+		ax.plot(rodDepths, line(np.array(rodDepths), b, m), 'b-', label="treco - ttrue = ")
+		plt.show()
+
+
+
+	#an algorithm that histograms time of arrivals in 
+	#the event, then forms to hypotheses and decides
+	#two arrival times based on the average of points
+	#contained in the fast component of the time distribution
+	def algo_Simple(self, momentum, timesmear):	
+
+		cutEvent = self.hadronicNoiseCut()
+		if(len(cutEvent.hitPoints) <= 15):
+			#print "did pass rough cut, adapt the cutting algorithm later"
+			#print "you need to be able to make a general rough cut on noise"
+			return (None, 1)
+
+		#calculations of beta based on
+		#a hypothesis of what the particle is
+		mkaon = 0.493677 #GeV
+		ekaon = np.sqrt(mkaon**2 + momentum**2)
+		beta_kaon = momentum/ekaon
+
+		T0_kaonHyp = []
+		for hp in cutEvent.hitPoints:
+			rho = np.sqrt(hp.getX()**2 + hp.getY()**2 + hp.getZ()**2)
+			t = hp.getT()
+			T0_kaonHyp.append(t - rho/(speedOfLight*beta_kaon))
+
+
+		if(timesmear <= 0.007):
+			pscut = 0.007
+		else:
+			pscut = timesmear
+
+		passed = []
+		earliest = min(T0_kaonHyp)
+		for t0 in T0_kaonHyp:
+			if(t0 <= pscut + earliest):
+				passed.append(t0)
+
+		if(len(passed) == 0):
+			return (None, None)
+
+
+		#return the average of those times
+		#and the number of hits kept
+		return (np.mean(passed), len(passed))
+		
