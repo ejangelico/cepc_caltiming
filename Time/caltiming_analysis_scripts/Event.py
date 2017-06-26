@@ -540,7 +540,7 @@ class Event:
 
 		return tEst, min(tList)
 
-	def algo_Snake(self, timesmear):
+	def algo_Snake(self, timesmear, radius, showerAxis):
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
@@ -549,12 +549,6 @@ class Event:
 			#print "you need to be able to make a general rough cut on noise"
 			return (None, 1)
 
-		#here input the algorithm that finds
-		#the shower axis.
-		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
-
-		#cutEvent.projectionDisplay(showerAxis)
-		radius = 15 #mm
 		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
 
 		if(len(passed) <= 8):
@@ -662,9 +656,10 @@ class Event:
 
 		return (tcept[-1], 0)
 
+
 	def algo_Highway(self, rodRadius, showerAxis, plotting = False):
-		cLight = 299.792458 # mm/ns
-		
+		cLight = speedOfLight # mm/ns
+
 		# Hit cut and event cut
 		eventCut = self.hadronicNoiseCut()
 		passedHits, rodDepths, rodTimes = eventCut.rodFilter(radius = 15, showerAxis = showerAxis)
@@ -754,7 +749,10 @@ class Event:
 				del cutPointCount[0]
 			if sum(cutPointCount) >= derivThreshold:
 				if not plotting:
-					return t0List[-cutPointCountLength]
+					if(len(t0List) < cutPointCountLength):
+						return t0List[0]
+					else:
+						return t0List[-cutPointCountLength]
 				else:
 					break
 
@@ -812,7 +810,6 @@ class Event:
 
 		#here input the algorithm that finds
 		#the shower axis.
-		showerAxis = [Point.Point(0,0,0,1), Point.Point(0,1,0,1).normalize()]
 
 		#cutEvent.projectionDisplay(showerAxis)
 		radius = 15 #mm
@@ -911,3 +908,42 @@ class Event:
 		#return the average of those times
 		#and the number of hits kept
 		return (np.mean(passed), len(passed))
+
+
+	#function that returns all T0 = t - r/v
+	#quantities assuming kaon velocity
+	def getKaonTime(self, momentum):
+		#calculations of beta based on
+		#a hypothesis of what the particle is
+		mkaon = 0.493677 #GeV
+		ekaon = np.sqrt(mkaon**2 + momentum**2)
+		beta_kaon = momentum/ekaon
+
+		T0_kaonHyp = []
+		for hp in self.hitPoints:
+			rho = np.sqrt(hp.getX()**2 + hp.getY()**2 + hp.getZ()**2)
+			t = hp.getT()
+			if(t > 20):
+				continue
+			T0_kaonHyp.append(t - rho/(speedOfLight*beta_kaon))
+
+		return T0_kaonHyp
+
+	#function that returns all T0 = t - r/v
+	#quantities assuming pion velocity
+	def getPionTime(self, momentum):
+		#calculations of beta based on
+		#a hypothesis of what the particle is
+		mpion = 0.139570 #GeV
+		epion = np.sqrt(mpion**2 + momentum**2)
+		beta_pion = momentum/epion
+
+		T0_pionHyp = []
+		for hp in self.hitPoints:
+			rho = np.sqrt(hp.getX()**2 + hp.getY()**2 + hp.getZ()**2)
+			t = hp.getT()
+			if(t > 20):
+				continue
+			T0_pionHyp.append(t - rho/(speedOfLight*beta_pion))
+
+		return T0_pionHyp

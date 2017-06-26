@@ -176,12 +176,16 @@ class DataSet:
 			if algo == 0:
 				tEst, tTru = event.algo_linearFirstTimeByLayer()
 			elif algo == 1:
-				tEst, tTru = event.algo_Snake(self.tSmear)
+				tEst, tTru = event.algo_Snake(self.tSmear, 15, self.getAxis(isB = False))
 				if(tEst is None or tTru is None):
 					continue
 			elif algo == 2:
 				tEst, n = event.algo_Simple(self.pMomentum, self.tSmear)
 				if(tEst is None or n is None):
+					continue
+			elif algo == 3:
+				tEst = event.algo_Highway(15, self.getAxis(isB = False))
+				if(tEst == None):
 					continue
 			else:
 				print "Please specify the time reconstruction algorithm"
@@ -306,3 +310,21 @@ class DataSet:
 
 		StdList = [x/1000 for x in StdList]
 		return StdList
+
+	def plotT0(self):
+		t0pions = []
+		t0kaons = []
+		for ev in self.events:
+			pt0temp = ev.getPionTime(self.pMomentum)
+			kt0temp = ev.getKaonTime(self.pMomentum)
+			for t in pt0temp:
+				t0pions.append(t)
+			for t in kt0temp:
+				t0kaons.append(t)
+
+		fig, ax = plt.subplots(figsize=(13,7))
+		ax.hist(t0kaons, 10000)
+		ax.set_xlim([-0.03, 0.03])
+		ax.set_title("Kaons with kaon assumption")
+		ax.set_xlabel("T0 (ns)")
+		plt.show()

@@ -20,50 +20,17 @@ if __name__ == "__main__":
 	print "Done."
 	sys.stdout.flush()
 
-	data = data.smear(0.05, 0)
-	
-	for i in range(0, len(data.events)):
-		print "Event number:", i
-		print data.events[i].algo_Highway(rodRadius = 15, showerAxis = data.getAxis(isB = False), plotting = True)
-	sys.exit()
-
-	for i in range(0, len(data.events)):
-		event = data.events[i].hadronicNoiseCut()
-		event.projectionDisplay(line = data.getAxis(isB = True))
-
-	"""
-	dotArray = []
-	yhat = Point.Point(0, 1, 0, cart = True)
-	w0List = np.linspace(0.5, 100, 1000)
-	for w0 in w0List:
-		print round(w0, 4)
-		ShowerAx = event.getShowerAxisWeighted(w0)
-		dotArray.append(yhat*ShowerAx[1])
-	#event.projectionDisplay(line = ShowerAx)
-	plt.plot(w0List, dotArray, 'k')
-	plt.xlabel("w0")
-	plt.ylabel("Dot product from y-axis")
-	plt.show()
-	"""
-	sys.exit()
-
 	#testing of algorithms given a line axis
 	#data.events[12].projectionDisplay()
 	#data.events[900].algo_rodLinearWithDepth(0.01)
-	smeardata = data.smear(0.1, 0)
-	#smeardata.setMomentum(10)
+	smeardata = data.smear(0.001, 0)
+	smeardata.setMomentum(5)
 	#smeardata.events[12].algo_rodLinearWithDepth(0.01)
 	#smeardata.events[50].algo_Snake(0)
 	#smeardata.testSnake()
 	#smeardata.timeReco(1, True)
 	#smeardata.simpleReco()
-	t0, eff = smeardata.listReconstructedTimes(algo=1)
-	fig, ax = plt.subplots(figsize=(13, 7))
-	ax.hist(t0, 300)
-	ax.set_xlim([5.9, 6.3])
-	ax.set_xlabel("reconstructed time (ns)")
-	ax.set_title("5 GeV Kaon time reconstruction, 100ps smear")
-	plt.show()
+	smeardata.plotT0()
 
 
 
