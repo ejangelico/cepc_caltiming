@@ -551,7 +551,7 @@ class Event:
 
 		#perform initial rough cuts
 		cutEvent = self.hadronicNoiseCut()
-		if(len(cutEvent.hitPoints) <= 15):
+		if(len(cutEvent.hitPoints) <= 7):
 			#print "did pass rough cut, adapt the cutting algorithm later"
 			#print "you need to be able to make a general rough cut on noise"
 			return (None, 1)
@@ -564,7 +564,7 @@ class Event:
 		radius = 15 #mm
 		passed, rodDepths, rodTimes = cutEvent.rodFilter(radius, showerAxis)
 
-		if(len(passed) <= 5):
+		if(len(passed) <= 8):
 			return (None, 2)
 
 		rodEvent = Event(passed, 0)
@@ -604,7 +604,10 @@ class Event:
 			#rejecting additional points 
 			#based on a criteria
 			if(n > 0):
-				pscut = 0.2/(n**(0.5))
+				if(timesmear <= 0.05):
+					pscut = 0.05/(n**(0.5))
+				else:
+					pscut = 1.5*timesmear/(n**(0.5))
 				if(abs(cept - tcept[-1]) > pscut):
 					#skip this point by removing
 					#from the bank
@@ -630,9 +633,9 @@ class Event:
 
 		#---Final outlier cuts---#
 
-		#if you haven't used at least 6
+		#if you haven't used at least 7
 		#points to do the fit
-		if(len(timebank) < 14):
+		if(len(timebank) < 7):
 			return (None, 3)
 
 
@@ -641,27 +644,25 @@ class Event:
 		#-----------------------#
 
 		#ttrue = 6.590 #ns for 1GeV charged kaon
-
 		"""
-		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
+		
+		fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(13,7))
 		ax1.plot(nit, tcept, 'ro-')
 		ax1.set_xlabel("number of iterations")
-		ax1.set_ylabel("time intercept of fit")
+		ax1.set_ylabel("time intercept of linear fit")
 		ax2.plot(rodDepths, rodTimes, 'ko')
-		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="treco - ttrue = ")
+		ax2.plot(rodDepths, fitfunc([tcept[-1], fitvels[-1]], np.array(rodDepths)), 'b-', label="N used = " + str(len(timebank)))
 		ax2.plot(depthbank, timebank, 'ro')
 		ax2.legend()
 		ax2.set_xlabel("rod depth (mm)")
 		ax2.set_ylabel("hit time (ns)")
-		ax3.plot(nit[1:], differentialTCept, 'go--')
-		ax3.set_ylabel("cint running average")
-		ax4.plot(nit, tcept_std, 'mo--')
-		ax4.set_ylabel("std running")
+		ax3.plot(nit[1:], differentialTCept, 'go-')
+		ax3.set_ylabel("differenetial time intercept")
+		ax4.plot(nit, tcept_std, 'mo-')
+		ax4.set_ylabel("running standard deviation")
 		plt.show()
 
-		
-		if(tcept[-1] > 6.25):
-			print "**" + str(self.evNum)
+		cutEvent.projectionDisplay()
 
 		print self.evNum
 		"""
@@ -759,20 +760,21 @@ class Event:
 			T0_kaonHyp.append(t - rho/(speedOfLight*beta_kaon))
 
 
-		#take the earliest time and 
-		#5 ps later than that time 
-		#and average the times
-		pscut = timesmear
+		if(timesmear <= 0.007):
+			pscut = 0.007
+		else:
+			pscut = timesmear
+
 		passed = []
 		earliest = min(T0_kaonHyp)
 		for t0 in T0_kaonHyp:
-			if(t0 < pscut + earliest):
+			if(t0 <= pscut + earliest):
 				passed.append(t0)
 
 		if(len(passed) == 0):
 			return (None, None)
 
-		print len(passed)
+
 		#return the average of those times
 		#and the number of hits kept
 		return (np.mean(passed), len(passed))
