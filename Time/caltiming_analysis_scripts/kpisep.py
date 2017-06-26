@@ -21,8 +21,8 @@ def getMisidentification(data1, data2, alg):
 
 	#make a cut down the middle in between the means of 
 	#the two distributions. 
-	mean1 = np.mean(recoTimes1)
-	mean2 = np.mean(recoTimes2)
+	median1 = np.median(recoTimes1)
+	median2 = np.median(recoTimes2)
 
 
 	N1 = len(recoTimes1)
@@ -30,8 +30,8 @@ def getMisidentification(data1, data2, alg):
 	misidentified1 = 0 	#the number of particles type 1 that are on the particle 2 half
 	misidentified2 = 0 	#the number of particles of type 2 that are on the particle 1 half
 
-	if(mean1 < mean2):
-		cutvalue = mean1 + abs(mean1 - mean2)/2.0 #time that splits the middle of the distributions
+	if(median1 < median2):
+		cutvalue = median1 + abs(median1 - median2)/2.0 #time that splits the middle of the distributions
 		for t in recoTimes2:
 			if(t <= cutvalue):
 				misidentified2 += 1
@@ -39,8 +39,8 @@ def getMisidentification(data1, data2, alg):
 			if(t >= cutvalue):
 				misidentified1 += 1
 
-	elif(mean1 > mean2):
-		cutvalue = mean2 + abs(mean1 - mean2)/2.0 #time that splits the middle of the distributions
+	elif(median1 > median2):
+		cutvalue = median2 + abs(median1 - median2)/2.0 #time that splits the middle of the distributions
 		for t in recoTimes2:
 			if(t >= cutvalue):
 				misidentified2 += 1
@@ -190,17 +190,30 @@ def pickleFullDataSet(alg):
 			separationData[str(sm)].append(momentumPointData)
 
 
-	pickle.dump([momenta, smears, separationData], open("snake_SwitchTimesmear.p", 'wb'))
+	pickle.dump([momenta, smears, separationData], open("actualsnake_final.p", 'wb'))
 
 			
 def plotFullData(sepdatafile):
 	momenta, smears, separationData = pickle.load(open(sepdatafile, 'rb'))
 
 	fig, ((ax1, ax2),(ax3, ax4)) = plt.subplots(ncols = 2, nrows = 2, figsize=(40, 22))
-	al = np.linspace(0.1, 1, len(smears)) #alphas to distinguish timesmear traces
-	al_count = -1
+
+	#heatmap calc
+	def rgb(minimum, maximum, value):
+	    minimum, maximum = float(minimum), float(maximum)
+	    ratio = 2 * (value-minimum) / (maximum - minimum)
+	    b = int(max(0, 255*(1 - ratio)))
+	    r = int(max(0, 255*(ratio - 1)))
+	    g = 255 - b - r
+	    return r/255., g/255., b/255.
+
+	vals = np.linspace(0, 255, len(smears))
+	minrgb = 0
+	maxrgb = 255
+	heats = [rgb(minrgb, maxrgb, _) for _ in vals]
+	heat_count = -1
 	for sm in smears:
-		al_count += 1
+		heat_count += 1
 		energyIndexedData = separationData[str(sm)]
 		kCorrect = []
 		pCorrect = []
@@ -213,10 +226,10 @@ def plotFullData(sepdatafile):
 			pCorrect.append(cor2/1000.0)
 			pmis.append(mis1/1000.0)
 
-		ax1.plot(momenta, kCorrect, 'mo-', alpha = al[al_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
-		ax2.plot(momenta, kmis, 'go-', alpha = al[al_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
-		ax3.plot(momenta, pmis, 'ro-', alpha = al[al_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
-		ax4.plot(momenta, pCorrect, 'bo-', alpha = al[al_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
+		ax1.plot(momenta, kCorrect, marker='o', color=heats[heat_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
+		ax2.plot(momenta, kmis, marker='o', color=heats[heat_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
+		ax3.plot(momenta, pmis, marker='o', color=heats[heat_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
+		ax4.plot(momenta, pCorrect, marker='o', color=heats[heat_count], label=r"$\sigma_t = $" + str(sm*1000) + "ps", linewidth=3, markersize=10)
 
 
 
@@ -304,7 +317,7 @@ def plotFullData(sepdatafile):
 if __name__ == "__main__":
 
 
-	#plotFullData("snake_SwitchTimesmear.p")
+	#plotFullData("highway_firstTry.p")
 	#pickleFullDataSet(1)
 	#gaussianFullDataSet(2)
 	#sys.exit()
@@ -314,11 +327,11 @@ if __name__ == "__main__":
 	kaonpath = "../../../data/pickles/kaons/noB/"
 	pionpath = "../../../data/pickles/pions/noB/"
 
-	kfilenames = ["AnaHit_Simu_kaon-_10GeV_E30L_E10mm_H40L_H10mm.p"]
-	pfilenames = ["AnaHit_Simu_pi-_10GeV_E30L_E10mm_H40L_H10mm.p"]
+	kfilenames = ["AnaHit_Simu_kaon-_2.5GeV_E30L_E10mm_H40L_H10mm.p"]
+	pfilenames = ["AnaHit_Simu_pi-_2.5GeV_E30L_E10mm_H40L_H10mm.p"]
 
-	kMomenta = [10]
-	pMomenta = [10]
+	kMomenta = [2.5]
+	pMomenta = [2.5]
 
 	#smears = [0.010]
 
@@ -327,7 +340,7 @@ if __name__ == "__main__":
 	kmis = []
 	pmis = []
 
-	smears = [0.0]
+	smears = [0.1]
 	for sm in smears:
 		kdata = []
 		pdata = []
@@ -362,19 +375,16 @@ if __name__ == "__main__":
 		t1, ef1 = kdata[0].listReconstructedTimes(algo=2)
 		t2, ef2 = pdata[0].listReconstructedTimes(algo=2)
 
-		#t1 = [_ for _ in t1 if _<(np.mean(t1) + np.std(t1))]
-		#t2 = [_ for _ in t2 if _<(np.mean(t2) + np.std(t2))]
-
-		mm = np.mean(t2) + 0.5*abs(np.mean(t1) - np.mean(t2))
+		mm = np.median(t2) + 0.5*abs(np.median(t1) - np.median(t2))
 		fig, ax = plt.subplots(figsize=(13, 7))
-		ax.hist(t1, 400, alpha=.5, label="kaons")
-		ax.hist(t2, 400, alpha=.5, label="pions")
+		ax.hist(t1, 1000, alpha=.5, label="kaons")
+		ax.hist(t2, 1000, alpha=.5, label="pions")
 		ax.plot([mm, mm], [0, 100])
-		ax.plot([np.mean(t1), np.mean(t1)], [0, 100])
-		ax.plot([np.mean(t2), np.mean(t2)], [0, 100])
-		#ax.set_xlim([-0.4, 0.05])
+		ax.plot([np.median(t1), np.median(t1)], [0, 100])
+		ax.plot([np.median(t2), np.median(t2)], [0, 100])
+		ax.set_xlim([-0.3, 0.05])
 		ax.legend()
-		ax.set_title("Simple 10GeV k/pi no smear")
+		ax.set_title("Simple 2.5GeV k/pi 100ps smear")
 		plt.show()
 		sys.exit()
 
