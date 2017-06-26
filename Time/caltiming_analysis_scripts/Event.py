@@ -662,7 +662,7 @@ class Event:
 
 		return (tcept[-1], 0)
 
-	def algo_Highway(self, rodRadius, showerAxis):
+	def algo_Highway(self, rodRadius, showerAxis, plotting = False):
 		cLight = 299.792458 # mm/ns
 		
 		# Hit cut and event cut
@@ -676,7 +676,7 @@ class Event:
 		# Parameters of the algorithm
 		dCut = 1.0    # Initial width of the band
 		dStep = 0.01 # How much to step dCut by
-		numIter = 500 # Maximum number of iterations
+		numIter = int(dCut/dStep)+1 # Maximum number of iterations
 		cutPointCountLength = 10 # Stores the number of points cut over the last cutPointCountLength iterations
 		derivThreshold = 5 # If the sum of the number of points cut over the last cutPointCountLength iterations
 				   # is greater than derivThreshold, then stop iterating and return the time from
@@ -697,9 +697,15 @@ class Event:
 		
 		# The quantities to measure at each iteration, not including the first guess
 		t0List = []
-		numPointsList = []
 		cutPointCount = []
-			
+
+		if plotting:
+			numPointsList = []
+			derivList = []
+			pointsList = []
+			lineList = []
+			dCutList = []
+
 		for n in range(0, numIter):
 			# The length before this iteration's band cut
 			lengthPrev = len(timesRemaining)
@@ -732,13 +738,65 @@ class Event:
 			# Update the t0List
 			t0List.append(t0)
 
-			# Check if losing points to quickly and return t0 if so
+			# Check if losing points too quickly and return t0 if so
 			numPointsCut = lengthPrev - len(timesRemaining)
 			cutPointCount.append(numPointsCut)
+
+			# Update all the parameters to plot
+			if plotting:
+				numPointsList.append(len(timesRemaining))
+				derivList.append(numPointsCut)
+				pointsList.append([depthsRemaining, timesRemaining])
+				lineList.append([t0, m])
+				dCutList.append(dCut+dStep)
+
 			if len(cutPointCount) > cutPointCountLength:
 				del cutPointCount[0]
 			if sum(cutPointCount) >= derivThreshold:
-				return t0List[-cutPointCountLength]
+				if not plotting:
+					return t0List[-cutPointCountLength]
+				else:
+					break
+
+		if plotting:
+			iterCount = range(0, len(t0List))
+		
+			fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(ncols=2, nrows=2, figsize=(10,7))
+		
+			ax1.plot(iterCount, t0List, 'k')
+			ax1.set_xlabel("Iteration")
+			ax1.set_ylabel("$t_0$ (ns)")
+		
+			ax2.plot(iterCount, numPointsList, 'k')
+			ax2.set_xlabel("Iteration")
+			ax2.set_ylabel("Number of Points")
+
+			ax3.plot(iterCount, derivList, 'k')
+			ax3.set_xlabel("Iteration")
+			ax3.set_ylabel("Number of Points Cut")
+
+			t0 = lineList[-cutPointCountLength][0]
+			m  = lineList[-cutPointCountLength][1]
+			xPoints = pointsList[-cutPointCountLength][0]
+			yPoints = pointsList[-cutPointCountLength][1]
+			dCut = dCutList[-cutPointCountLength]
+
+			x = np.linspace(min(xPoints), max(xPoints))
+			y = [m*z +t0 for z in x]
+			yHi = [m*z + t0 + dCut*np.sqrt(1+m**2) for z in x]
+			yLo = [m*z + t0 - dCut*np.sqrt(1+m**2) for z in x]
+
+			ax4.plot(depths, times, 'ro')
+			ax4.plot(xPoints, yPoints, 'ko')
+			ax4.plot(x, y, 'k')
+			ax4.plot(x, yLo, 'k--')
+			ax4.plot(x, yHi, 'k--')
+			ax4.set_xlabel("Depth along Cylinder (mm)")
+			ax4.set_ylabel("Time (ns)")
+
+			plt.show()
+
+			return t0List[-cutPointCountLength]
 
 		# If you make it outside the for loop, there has been some strange failure
 		return None
@@ -853,4 +911,3 @@ class Event:
 		#return the average of those times
 		#and the number of hits kept
 		return (np.mean(passed), len(passed))
-		
